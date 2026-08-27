@@ -18,6 +18,6 @@ export default new DataSource({
   entities: [__dirname + '/src/**/*.entity.ts'],
   migrations: [__dirname + '/src/migrations/*{.ts,.js}'],
 
-  synchronize: false,
+  synchronize: true, // true para desarrollo, false para producción; a true lo cambie!
   logging: true,
 });

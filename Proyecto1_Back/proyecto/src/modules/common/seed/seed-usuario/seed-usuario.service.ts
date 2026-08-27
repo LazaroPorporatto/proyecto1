@@ -55,7 +55,7 @@ async seedUsuario() {
 
   const entryData = [
     { mail: 'admin@gmail.com', contrasena: 'admin', rol: "Admin", denominacion:"Admin" },
-  
+    { mail: 'estudiante@gmail.com', contrasena: 'estudiante123', rol: "Admin", denominacion:"Estudiante" }, // Nuevo usuario añadido
   ];
 
   for (const data of entryData) {
@@ -103,4 +103,3 @@ async seedUsuario() {
     console.log('✅ Todos los seeds completados.');
   }
 }
-
