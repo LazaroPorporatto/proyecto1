@@ -320,6 +320,7 @@ export class ProductoService {
       marcaId: dto.marcaId,
       lineaId: dto.lineaId,
       alicuotaIva: dto.alicuotaIva,
+      cantidadPresentacion: dto.cantidadPresentacion,
     });
 
     // Validar unicidad (Infrastructure - DB)
@@ -382,6 +383,7 @@ export class ProductoService {
       marcaId: dto.marcaId ?? productoActual.marcaId,
       lineaId: dto.lineaId ?? productoActual.lineaId,
       alicuotaIva: dto.alicuotaIva ?? productoActual.alicuotaIva,
+      cantidadPresentacion: dto.cantidadPresentacion ?? productoActual.cantidadPresentacion,
 
     });
 

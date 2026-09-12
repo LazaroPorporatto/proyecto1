@@ -11,6 +11,7 @@ import {
 import { AlicuotaIva } from 'src/modules/organizacion/enums/alicuota-iva.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReferenciaDto } from 'src/modules/common/dto/referencia.dto';
+import { UnidadPresentacion } from '../enums/unidad-presentacion.enum';
 /*
 Se Utiliza cuando se necesita la entidad producto
 */
@@ -133,14 +134,18 @@ export class ProductoDto {
   @IsInt()
   stockMinimo: number;
 
-  @ApiProperty()
-  @IsBoolean()
-  @IsNotEmpty()
-  utilizaPack: boolean;
+  @ApiProperty({ enum: UnidadPresentacion, enumName: 'UnidadPresentacion' })
+  @IsEnum(UnidadPresentacion)
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? UnidadPresentacion[value.toUpperCase() as keyof typeof UnidadPresentacion]
+      : value,
+  )
+  unidadPresentacion: UnidadPresentacion;
 
-  @ApiPropertyOptional()
-  @IsInt()
-  cantidadPorPack: number;
+  @ApiProperty()
+  @IsNumber()
+  cantidadPresentacion: number;
 
   @ApiProperty({ example: 123 })
   @Type(() => Number)

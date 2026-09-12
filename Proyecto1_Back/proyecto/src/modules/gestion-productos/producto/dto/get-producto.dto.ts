@@ -2,12 +2,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsString,
   Min,
 } from 'class-validator';
+import { UnidadPresentacion } from '../enums/unidad-presentacion.enum';
 /*
 Se Utiliza para la busqueda y llenado de la tabla
 */
@@ -114,19 +116,19 @@ export class GetProductoDto {
   stockMinimo: number;
 
   @ApiProperty({
-    description: 'Indica si posee utiliza Stock minimo',
-    type: Boolean,
-    example: false,
+    enum: UnidadPresentacion,
+    enumName: 'UnidadPresentacion',
+    description: 'Unidad de presentación del producto',
+    example: UnidadPresentacion.PACK,
   })
-  @IsBoolean()
-  @IsNotEmpty()
-  utilizaPack: boolean;
+  @IsEnum(UnidadPresentacion)
+  unidadPresentacion: UnidadPresentacion;
 
-  @ApiProperty({ example: 50, description: 'Cantidad en stock minimo' })
+  @ApiProperty({ example: 6, description: 'Cantidad de la presentación' })
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
-  cantidadPorPack: number;
+  cantidadPresentacion: number;
 
   @IsString()
   codigoReferencia: string;
