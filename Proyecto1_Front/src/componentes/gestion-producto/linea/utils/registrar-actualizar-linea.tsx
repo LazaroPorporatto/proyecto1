@@ -6,11 +6,13 @@ import { Button } from "../../../ui/Button";
 import FormInput from "../../../herramientas/formateo-de-campos/form-input";
 import React from "react";
 import { Card } from "../../../ui/Card";
-import { FormValues, schema, transformData, SublineasEnPayload, transformarSublineas } from "../interfaces/interfaces-validaciones-linea";
+import { FormValues, schema, transformData } from "../interfaces/interfaces-validaciones-linea";
 import LineaService from "../services/linea-service";
+import SuperLineaService from "../../superlinea/services/superlinea-service";
 import { Linea } from "../../../../interfaces/gestion-producto/linea/interfaces-linea";
+import { Superlinea } from "../../../../interfaces/gestion-producto/superlinea/interfaces-superlinea";
 
-import { Layers, PlusCircle } from "lucide-react";
+import { Layers } from "lucide-react";
 import { parseApiError } from "../../../../utils/errores";
 import { ResponsePost } from "../../../../interfaces/generales/interfaces-generales";
 import CantidadesInput from "../../../herramientas/formateo-de-campos/cantidades-input";
@@ -34,6 +36,7 @@ export default function RegistrarActualizarLineaForm({
   const usuarioId = getUsuarioId();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
   const [rStockCritico, setStockCritico] = useState(false);
+  const [superLineas, setSuperLineas] = useState<Superlinea[]>([]);
 
   const methods = useForm<FormValues>({
     resolver: yupResolver(schema(rStockCritico)) as any,
@@ -46,9 +49,9 @@ export default function RegistrarActualizarLineaForm({
     setValue,
     watch,
     setError,
+    register,
   } = methods;
 
- 
   const stockMinimo = watch("stockMinimo");
   const utilizaStockMinimo = watch("utilizaStockMinimo");
 
@@ -65,12 +68,15 @@ export default function RegistrarActualizarLineaForm({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const resSuperLineas = await SuperLineaService.obtener({ skip: 0, take: 100 });
+        setSuperLineas(resSuperLineas?.data || resSuperLineas || []);
+
         if (linea) {
           setValue("denominacion", linea.denominacion || "");
+          setValue("superLineaId", linea.superLinea?.id || (linea as any).superLineaId || linea.superlinea?.id || 0);
           setValue("observacion", linea.observacion || null);
           setValue("stockMinimo", linea.stockMinimo || 0);
           setValue("utilizaStockMinimo", linea.utilizaStockMinimo || false);
-          
         }
       } catch (error) {
         console.error("Error al obtener los datos:", error);
@@ -82,8 +88,6 @@ export default function RegistrarActualizarLineaForm({
   const onSubmit = async (formData: FormValues) => {
     let response: ResponsePost;
     try {
-     
-
       if (linea) {
         const payload = { ...formData, usuarioUpdatedId: usuarioId };
         response = await LineaService.actualizar(linea.id, payload);
@@ -98,11 +102,6 @@ export default function RegistrarActualizarLineaForm({
     }
   };
 
- 
-
-  
-
-  
   const handleOnClose = async () => {
     const confirmed = await showConfirmation({
       type: TipoAlertaConfirmacion.DEFAULT,
@@ -110,7 +109,7 @@ export default function RegistrarActualizarLineaForm({
       message: "¿Estás seguro de que quieres cerrar el formulario? NO se guardaran los cambios.",
       confirmText: "Aceptar",
       cancelText: "Cancelar",
-      onConfirm: () => {},
+      onConfirm: () => { },
     });
     if (confirmed) onClose();
   };
@@ -128,16 +127,36 @@ export default function RegistrarActualizarLineaForm({
         <fieldset disabled={linea?.sistema === 1}>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-6 py-4">
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-6 py-4">
                 <div className="lg:col-span-2">
                   <FormInput name="denominacion" label="Denominación" placeholder="Ingresa la denominación" />
+                </div>
+
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    SuperLínea <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...register("superLineaId", { valueAsNumber: true })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:text-white"
+                  >
+                    <option value="">Seleccione una SuperLínea...</option>
+                    {superLineas.map((sl) => (
+                      <option key={sl.id} value={sl.id}>
+                        {sl.denominacion}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.superLineaId && (
+                    <p className="mt-1 text-xs text-red-600">{String(errors.superLineaId.message)}</p>
+                  )}
                 </div>
 
                 <div className="lg:col-span-2">
                   <FormInput name="observacion" label="Observación" placeholder="Ingresa una observación (opcional)" />
                 </div>
 
-                <div className="flex items-end gap-2 lg:col-span-1">
+                <div className="flex items-end gap-2 lg:col-span-2">
                   <label className="flex items-center pb-2">
                     <input
                       type="checkbox"
@@ -168,7 +187,7 @@ export default function RegistrarActualizarLineaForm({
         </fieldset>
       </Card>
 
-     
+
       <AlertasConfirmacion />
     </div>
   );

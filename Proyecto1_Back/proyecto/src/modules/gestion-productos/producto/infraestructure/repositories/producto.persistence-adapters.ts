@@ -79,6 +79,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       const entity = await this.repository
         .createQueryBuilder('producto')
         .leftJoinAndSelect('producto.linea', 'linea')
+        .leftJoinAndSelect('linea.superLinea', 'superLinea')
         .leftJoinAndSelect('producto.marca', 'marca')
         .where('producto.id = :id', { id })
         .andWhere('producto.deletedAt IS NULL')
@@ -233,6 +234,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       .createQueryBuilder('producto')
       .leftJoinAndSelect('producto.marca', 'marca')
       .leftJoinAndSelect('producto.linea', 'linea')
+      .leftJoinAndSelect('linea.superLinea', 'superLinea');
 
     if (denominacion || codigoProveedor || codigoReferencia) {
       const condiciones: string[] = [];

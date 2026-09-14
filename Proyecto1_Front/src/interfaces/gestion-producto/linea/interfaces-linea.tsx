@@ -10,7 +10,8 @@ export interface Linea {
   deletedAt: string | null;
   usuarioCreatedId: number;
   usuarioUpdatedId: number;
-  superlinea: SelectSuperlinea;
+  superlinea?: SelectSuperlinea;
+  superLinea?: SelectSuperlinea;
   sublineas: SelectSublinea[];
   sistema: number;
   stockMinimo: number | null;

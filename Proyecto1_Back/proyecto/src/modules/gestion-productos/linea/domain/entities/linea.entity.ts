@@ -35,7 +35,7 @@ export class Linea {
   @JoinColumn({ name: 'super_linea_id' })
   superLinea: SuperLinea;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ name: 'super_linea_id', type: 'int', nullable: true })
   superLineaId?: number;
  
   @Column('boolean', { default: false })

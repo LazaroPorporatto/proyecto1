@@ -88,6 +88,7 @@ export class LineaPersistenceAdapter
     entity.stockMinimo = data.stockMinimo ?? 0;
     if (data.superLineaId) {
       entity.superLineaId = data.superLineaId;
+      entity.superLinea = undefined as any;
     }
     if (data.usuarioUpdatedId) {
       entity.usuarioUpdatedId = data.usuarioUpdatedId;
@@ -100,10 +101,8 @@ export class LineaPersistenceAdapter
 
   async findOne(id: number): Promise<Linea | null> {
     try {
-      const entity = await this.repository
-        .createQueryBuilder('linea')
-        .where('linea.id = :id', { id })
-        .andWhere('linea.deletedAt IS NULL')
+      const entity = await this.baseQuery()
+        .andWhere('linea.id = :id', { id })
         .getOne();
 
       this.logger.warn(`Entidad obtenida: ${JSON.stringify(entity)}`);

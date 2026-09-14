@@ -63,6 +63,7 @@ export const menuItems: MenuItem[] = [
         label: "Configuración",
         path: "",
         subMenu: [
+          { icon: Layers, label: "SuperLínea", path: "superlinea" },
           { icon: Tag, label: "Marca", path: "marca" },
           { icon: Layers, label: "Líneas", path: "linea" },
         ],

@@ -58,21 +58,21 @@ export default function ConsultarProductos() {
   const isMounted = useRef(false);
   const inicializacionCompleta = useRef(false);
 
-  
-   // =========================
-    // PAGINACIÓN
-    // =========================
-    const {
-      paginaActual,
-      entidadesTotales,
-      skip,
-      take,
-      setEntidadesTotales,
-      handlePageChange,
-      resetearPaginacion,
-    } = usePaginacion(PAGINACION.TAKE_DEFAULT);
 
-    // MANEJO DE FILTROS ========================================================
+  // =========================
+  // PAGINACIÓN
+  // =========================
+  const {
+    paginaActual,
+    entidadesTotales,
+    skip,
+    take,
+    setEntidadesTotales,
+    handlePageChange,
+    resetearPaginacion,
+  } = usePaginacion(PAGINACION.TAKE_DEFAULT);
+
+  // MANEJO DE FILTROS ========================================================
   const [filtrosInicializados, setFiltrosInicializados] = useState(false);
   const {
     setFiltrosNecesarios,
@@ -87,13 +87,13 @@ export default function ConsultarProductos() {
 
   const filtrosInicialesConsultarProducto = useFiltrosIniciales("consultar-producto");
 
-    // Contexto de catálogos
+  // Contexto de catálogos
   const {
     setLineas,
     setMarcas,
     setProveedores,
   } = useCatalogosContext();
-  
+
   // Setear qué filtros mostrar en la sidebar
   useEffect(() => {
     limpiarFiltros();
@@ -131,19 +131,19 @@ export default function ConsultarProductos() {
 
 
 
-    // =========================
+  // =========================
   // ALERTAS / CONFIRMACIONES
   // =========================
   const { alerts, addAlert, removeAlert } = useAlerts();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
-  
+
   // =========================
-    // IMPRESIÓN
-    // =========================
-    const {
-      handleImprimirTodo,
-      handleImprimirPagina,
-    } = useProductoImpresion();
+  // IMPRESIÓN
+  // =========================
+  const {
+    handleImprimirTodo,
+    handleImprimirPagina,
+  } = useProductoImpresion();
 
   const fetchLineas = async () => {
     setError(null);
@@ -233,7 +233,7 @@ export default function ConsultarProductos() {
       message: "¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.",
       confirmText: "Eliminar",
       cancelText: "Cancelar",
-      onConfirm: () => {},
+      onConfirm: () => { },
     });
 
     if (!confirmed) return;
@@ -481,12 +481,12 @@ export default function ConsultarProductos() {
       scrollable: false,
     },
     {
-      header: "Precio", 
-      accessor:"precio",
-      flex:0.3,
-      type:"text", 
-      editable:false,
-      align:"left", 
+      header: "Precio",
+      accessor: "precio",
+      flex: 0.3,
+      type: "text",
+      editable: false,
+      align: "left",
       formatFunction: ({ value }) => <span>${formatPrice(value)}</span>,
     }
   ];
@@ -511,38 +511,38 @@ export default function ConsultarProductos() {
             {/* Tabla de productos */}
             <Card className="border-gray-200 dark:border-slate-700">
               <div className="hidden lg:block">
-              {/*  HEADER Desktop */}
-              <ProductosHeader
-                roles={getRoles()}
-                codigo={codigo}
-                exacto={exacto}
-                onChangeCodigo={setCodigo}
-                onChangeExacto={setExacto}
-                onBuscarRapido={() => handleBuscarProductosRapido(true)}
-                onNuevo={openModal}
-                total={entidadesTotales}
-                mostrados={productos.length}
-                paginaActual={paginaActual}
-                onImprimirTodo={handleImprimirTodo}
-                onImprimirPagina={handleImprimirPagina}
-              />
+                {/*  HEADER Desktop */}
+                <ProductosHeader
+                  roles={getRoles()}
+                  codigo={codigo}
+                  exacto={exacto}
+                  onChangeCodigo={setCodigo}
+                  onChangeExacto={setExacto}
+                  onBuscarRapido={() => handleBuscarProductosRapido(true)}
+                  onNuevo={openModal}
+                  total={entidadesTotales}
+                  mostrados={productos.length}
+                  paginaActual={paginaActual}
+                  onImprimirTodo={handleImprimirTodo}
+                  onImprimirPagina={handleImprimirPagina}
+                />
               </div>
 
               <div className="lg:hidden">
                 <ProductosHeaderLg
-                codigo={codigo}
-                exacto={exacto}
-                roles={getRoles()}
-                onChangeCodigo={setCodigo}
-                onChangeExacto={setExacto}
-                onBuscarRapido={() => handleBuscarProductosRapido(true)}
-                onNuevo={openModal}
-                total={entidadesTotales}
-                mostrados={productos.length}
-                paginaActual={paginaActual}
-                onImprimirTodo={handleImprimirTodo}
-                onImprimirPagina={handleImprimirPagina}
-              />
+                  codigo={codigo}
+                  exacto={exacto}
+                  roles={getRoles()}
+                  onChangeCodigo={setCodigo}
+                  onChangeExacto={setExacto}
+                  onBuscarRapido={() => handleBuscarProductosRapido(true)}
+                  onNuevo={openModal}
+                  total={entidadesTotales}
+                  mostrados={productos.length}
+                  paginaActual={paginaActual}
+                  onImprimirTodo={handleImprimirTodo}
+                  onImprimirPagina={handleImprimirPagina}
+                />
               </div>
 
               <CardContent className="p-0">
@@ -559,7 +559,7 @@ export default function ConsultarProductos() {
                   onHistorial={handleMostrarHistorialPrecios}
                   onNotificar={handleNotificar}
                 />
-                  
+
                 <div className="lg:hidden space-y-3">
                   {productos.map((producto) => (
                     <DatosCard
@@ -575,7 +575,7 @@ export default function ConsultarProductos() {
                     />
                   ))}
                 </div>
-                
+
 
 
               </CardContent>
@@ -596,7 +596,7 @@ export default function ConsultarProductos() {
         )}
       </div>
 
-     {/* ================= MODALES ================= */}
+      {/* ================= MODALES ================= */}
       <ProductosModales
         isAltaOpen={isModalOpen}
         mostrarActualizarProducto={mostrarActualizarProducto}
