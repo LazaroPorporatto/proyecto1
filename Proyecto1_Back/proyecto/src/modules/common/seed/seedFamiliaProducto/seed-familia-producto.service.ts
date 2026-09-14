@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Linea } from 'src/modules/gestion-productos/linea/domain/entities/linea.entity';
 import { Marca } from 'src/modules/gestion-productos/marca/domain/entities/marca.entity';
+import { SuperLinea } from 'src/modules/gestion-productos/superlinea/domain/entities/super-linea.entity';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
 import { DeepPartial, Repository } from 'typeorm';
@@ -9,6 +10,8 @@ import { DeepPartial, Repository } from 'typeorm';
 @Injectable()
 export class SeedFamiliaProductoService {
   constructor(
+    @InjectRepository(SuperLinea)
+    private readonly superLineaRepository: Repository<SuperLinea>,
 
     @InjectRepository(Linea)
     private readonly lineaRepository: Repository<Linea>,
@@ -16,16 +19,49 @@ export class SeedFamiliaProductoService {
     @InjectRepository(Marca)
     private readonly marcaRepository: Repository<Marca>,
 
-
-
     @InjectRepository(Proveedor)
     private readonly proveedorRepository: Repository<Proveedor>,
 
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+  ) { }
 
+  async seedSuperLineas() {
+    const entryData = [
+      {
+        denominacion: 'GENERAL',
+        sistema: 0,
+        usuarioCreatedId: 1,
+      },
+    ];
 
-  ) {}
+    for (const data of entryData) {
+      const exists = await this.superLineaRepository.findOneBy({
+        denominacion: data.denominacion.toUpperCase(),
+      });
+
+      if (!exists) {
+        const usuarioCreated = await this.usuarioRepository.findOneBy({
+          id: data.usuarioCreatedId,
+        });
+
+        if (!usuarioCreated) continue;
+
+        const superLinea = this.superLineaRepository.create({
+          denominacion: data.denominacion.toUpperCase(),
+          sistema: data.sistema,
+          usuarioCreatedId: usuarioCreated.id,
+          utilizaStockMinimo: false,
+          stockMinimo: 0,
+        } as DeepPartial<SuperLinea>);
+
+        await this.superLineaRepository.save(superLinea);
+        console.log(`✅ SuperLínea "${data.denominacion}" creada.`);
+      } else {
+        console.log(`⚠️ SuperLínea "${data.denominacion}" ya existe.`);
+      }
+    }
+  }
 
 
   async seedLineas() {
@@ -47,7 +83,7 @@ export class SeedFamiliaProductoService {
         sistema: 0,
         usuarioCreatedId: 1,
       },
-    
+
       {
         denominacion: 'BOLSAS',
         sistema: 0,
@@ -72,8 +108,10 @@ export class SeedFamiliaProductoService {
         usuarioCreatedId: 1,
       },
 
-    
+
     ];
+
+    const superLineaGeneral = await this.superLineaRepository.findOneBy({ denominacion: 'GENERAL' });
 
     for (const data of entryData) {
       const exists = await this.lineaRepository.findOneBy({
@@ -81,7 +119,7 @@ export class SeedFamiliaProductoService {
       });
 
       if (!exists) {
-        
+
         const usuarioCreated = await this.usuarioRepository.findOneBy({
           id: data.usuarioCreatedId,
         });
@@ -96,9 +134,9 @@ export class SeedFamiliaProductoService {
         const linea = this.lineaRepository.create({
           denominacion: data.denominacion.toUpperCase(),
           sistema: data.sistema,
-
+          superLineaId: superLineaGeneral ? superLineaGeneral.id : 1,
           usuarioCreatedId: usuarioCreated.id,
-        } as DeepPartial<Linea>); 
+        } as DeepPartial<Linea>);
 
         await this.lineaRepository.save(linea);
         console.log(`✅ Linea "${data.denominacion}" creada.`);
@@ -114,7 +152,7 @@ export class SeedFamiliaProductoService {
       { denominacion: 'SIN MARCA', usuarioCreatedId: 1, sistema: 0 },
       { denominacion: 'CAROYENSE', usuarioCreatedId: 1, sistema: 0 },
       { denominacion: 'CIRCE', usuarioCreatedId: 1, sistema: 0 },
-    
+
     ];
 
     for (const data of entryData) {
@@ -152,8 +190,8 @@ export class SeedFamiliaProductoService {
   async runAllSeeds() {
     console.log('🚀 Iniciando todos los seeds...');
 
-
-   await  this.seedLineas();
+    await this.seedSuperLineas();
+    await this.seedLineas();
     await this.seedMarcas();
 
     console.log('✅ Todos los seeds completados.');

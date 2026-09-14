@@ -14,8 +14,14 @@ export class LineaMapper {
       utilizaStockMinimo: entity.utilizaStockMinimo,
       observacion: entity.observacion ?? '',
       sistema: entity.sistema,
+      superLineaId: entity.superLineaId ?? entity.superLinea?.id ?? null,
+      superLinea: entity.superLinea
+        ? {
+            id: entity.superLinea.id,
+            denominacion: entity.superLinea.denominacion,
+          }
+        : null,
       deletedAt: entity.deletedAt ? entity.deletedAt.toISOString() : null,
-
     };
   }
 }

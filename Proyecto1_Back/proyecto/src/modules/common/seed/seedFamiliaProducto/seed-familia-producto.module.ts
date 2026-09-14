@@ -10,17 +10,18 @@ import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usu
 
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
 
+import { SuperLinea } from 'src/modules/gestion-productos/superlinea/domain/entities/super-linea.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature(
       [ 
+      SuperLinea,
       Linea, 
       Marca,
       Producto,
       Usuario,
       Proveedor,
-
-    
     ]), // Repositorios que se inyectarán
   ],
   controllers: [SeedFamiliaProductoController], // Agregar el controlador aquí

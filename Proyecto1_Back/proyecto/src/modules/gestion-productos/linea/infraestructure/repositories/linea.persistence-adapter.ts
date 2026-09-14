@@ -35,22 +35,28 @@ export class LineaPersistenceAdapter
     super(repository);
   }
 
+  protected baseQuery(incluirEliminados = false) {
+    const query = super.baseQuery(incluirEliminados);
+    query.leftJoinAndSelect('linea.superLinea', 'superLinea');
+    return query;
+  }
+
   @Transactional()
   async create(data: CreateLineaDto): Promise<Linea> {
     const repo = this.uow.getRepository(Linea);
 
     try {
-      // Creamos la entidad sin sublíneas
+      // Creamos la entidad
       const nuevaEntity = repo.create({
         denominacion: data.denominacion,
         utilizaStockMinimo: data.utilizaStockMinimo,
         stockMinimo: data.stockMinimo,
         usuarioCreatedId: data.usuarioCreatedId,
         observacion: data.observacion,
+        superLineaId: data.superLineaId,
       });
 
       const entityGuardada = await repo.save(nuevaEntity);
-
 
       return entityGuardada;
     } catch (error) {
@@ -80,9 +86,13 @@ export class LineaPersistenceAdapter
     entity.denominacion = data.denominacion ?? entity.denominacion;
     entity.utilizaStockMinimo = data.utilizaStockMinimo;
     entity.stockMinimo = data.stockMinimo ?? 0;
-    entity.usuarioCreatedId = data.usuarioCreatedId;
+    if (data.superLineaId) {
+      entity.superLineaId = data.superLineaId;
+    }
+    if (data.usuarioUpdatedId) {
+      entity.usuarioUpdatedId = data.usuarioUpdatedId;
+    }
 
-    // Guardar entidad antes de procesar sublíneas (opcional según lógica de negocio)
     const entityActualizada = await repo.save(entity);
 
     return entityActualizada;
