@@ -4,6 +4,16 @@ import { SelectSublinea } from "../sublinea/interfaces-sublinea";
 import { ItemProdAlternativo } from "./interfaces-item-prod-alternativo";
 import { ItemProveedor } from "./interfaces-item-proveedor";
 
+export enum UnidadPresentacion {
+  UNIDAD = 'UNIDAD',
+  LITRO = 'L',
+  MILILITRO = 'ML',
+  KILOGRAMO = 'KG',
+  GRAMO = 'GR',
+  PACK = 'PACK',
+  CAJA = 'CAJA',
+}
+
 export interface Producto {
   //
   id: number;
@@ -49,9 +59,9 @@ export interface Producto {
   itemsProveedor?: ItemProveedor[] | null;
  */
   stockMinimo: number;
-  cantidadPorPack: number;
   utilizaStockMinimo: boolean;
-  utilizaPack: boolean;
+  unidadPresentacion: UnidadPresentacion;
+  cantidadPresentacion: number;
  // oferta: boolean;
  // cantidadOferta: number;
  /*  porcentajeOcasional: number;
@@ -165,8 +175,8 @@ export interface ProductoSeleccionado {
   porcentajeMayorista: number;
   porcentajeCliente: number;
   porcentajeOferta: number;
-  utilizaPack: boolean;
-  cantidadPorPack: number;
+  unidadPresentacion: UnidadPresentacion;
+  cantidadPresentacion: number;
   utilizaStockMinimo: boolean;
   stockMinimo: number;
   cantidadOferta: number;

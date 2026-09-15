@@ -4,6 +4,7 @@ import axiosConfig from "../../../../utils/axiosConfig";
 import { createCrudService } from "../../../../utils/crudFactory";
 import { FormValues } from "../interfaces/interfaces-validaciones-item-prod-alternativo";
 import ApiService from "../../../../utils/apiService";
+import { UnidadPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 
 
 const apiUrl = axiosConfig.apiUrl;
@@ -124,6 +125,32 @@ const ProductoService = {
       { headers },
     );
     return data;
+  },
+
+  /**
+   * CR-005: pide al backend una denominación sugerida a partir de
+   * Marca + Línea + Presentación. No persiste nada.
+   */
+  sugerirDenominacion: async (
+    marcaId: number,
+    lineaId: number,
+    unidadPresentacion: UnidadPresentacion,
+    cantidadPresentacion: number,
+  ): Promise<{ denominacion: string } | null> => {
+    try {
+      const token = localStorage.getItem("Token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const { data } = await axios.get(`${apiUrl}/producto/sugerir-denominacion`, {
+        headers,
+        params: { marcaId, lineaId, unidadPresentacion, cantidadPresentacion },
+      });
+
+      return data;
+    } catch (error) {
+      console.error("Error al sugerir denominación:", error);
+      return null;
+    }
   },
 };
 
