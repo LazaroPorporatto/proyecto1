@@ -236,16 +236,15 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       .leftJoinAndSelect('producto.linea', 'linea')
       .leftJoinAndSelect('linea.superLinea', 'superLinea');
 
-    if (denominacion || codigoProveedor || codigoReferencia) {
+    if (denominacion && denominacion.trim() !== '') {
+      query.andWhere('UPPER(producto.denominacion) LIKE UPPER(:denominacion)', {
+        denominacion: `${denominacion.trim()}%`,
+      });
+    }
+
+    if (codigoProveedor || codigoReferencia) {
       const condiciones: string[] = [];
       const parametros: any = {};
-
-      if (denominacion) {
-        condiciones.push(
-          `UPPER(producto.denominacion) LIKE UPPER(:denominacion)`,
-        );
-        parametros.denominacion = `%${denominacion}%`;
-      }
 
       if (codigoProveedor) {
         if (codProveedorExacto) {

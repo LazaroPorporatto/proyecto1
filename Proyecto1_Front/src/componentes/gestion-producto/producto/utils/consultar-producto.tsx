@@ -122,6 +122,14 @@ export default function ConsultarProductos() {
   }, [codigo, exacto]);
 
   useEffect(() => {
+    if (!inicializacionCompleta.current) return;
+    const timer = setTimeout(() => {
+      handleBuscarProductos(true);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [valoresFiltros.denominacion]);
+
+  useEffect(() => {
     if (buscar.cont > 0 && buscar.componente === "consultar-producto") {
       handleBuscarProductos(true);
     }
@@ -516,8 +524,12 @@ export default function ConsultarProductos() {
                   roles={getRoles()}
                   codigo={codigo}
                   exacto={exacto}
+                  denominacion={valoresFiltros.denominacion || ""}
                   onChangeCodigo={setCodigo}
                   onChangeExacto={setExacto}
+                  onChangeDenominacion={(value) =>
+                    setValoresFiltros((prev: any) => ({ ...prev, denominacion: value }))
+                  }
                   onBuscarRapido={() => handleBuscarProductosRapido(true)}
                   onNuevo={openModal}
                   total={entidadesTotales}
@@ -532,9 +544,13 @@ export default function ConsultarProductos() {
                 <ProductosHeaderLg
                   codigo={codigo}
                   exacto={exacto}
+                  denominacion={valoresFiltros.denominacion || ""}
                   roles={getRoles()}
                   onChangeCodigo={setCodigo}
                   onChangeExacto={setExacto}
+                  onChangeDenominacion={(value) =>
+                    setValoresFiltros((prev: any) => ({ ...prev, denominacion: value }))
+                  }
                   onBuscarRapido={() => handleBuscarProductosRapido(true)}
                   onNuevo={openModal}
                   total={entidadesTotales}
