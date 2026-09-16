@@ -21,7 +21,7 @@ export class SeedUsuarioService {
   // Seed de Roles
   async seedRol() {
     /* ojo no cambiar el orden */
-    const entryData =  [
+    const entryData = [
 
       { denominacion: 'Administrador' },
       { denominacion: 'Empleado' },
@@ -40,7 +40,7 @@ export class SeedUsuarioService {
       });
 
       if (!exists) {
-        const dataGuardada = this.rolRepository.create(data); 
+        const dataGuardada = this.rolRepository.create(data);
         await this.rolRepository.save(dataGuardada);
         console.log(`✅ Rol "${data.denominacion}" creado.`);
       } else {
@@ -50,54 +50,55 @@ export class SeedUsuarioService {
   }
 
 
- // Seed de Usuarios
-async seedUsuario() {
+  // Seed de Usuarios
+  async seedUsuario() {
 
-  const entryData = [
-    { mail: 'admin@gmail.com', contrasena: 'admin', rol: "Admin", denominacion:"Admin" },
-    { mail: 'estudiante@gmail.com', contrasena: 'estudiante123', rol: "Admin", denominacion:"Estudiante" }, // Nuevo usuario añadido
-  ];
+    const entryData = [
+      { mail: 'admin@gmail.com', contrasena: 'admin', rol: "Admin", denominacion: "Admin" },
+      { mail: 'estudiante@gmail.com', contrasena: 'estudiante123', rol: "Administrador", denominacion: "Estudiante" }, // Nuevo usuario añadido
+      { mail: 'administrador@gmail.com', contrasena: 'admin12345', rol: "Administrador", denominacion: "Estudiante" },
+    ];
 
-  for (const data of entryData) {
+    for (const data of entryData) {
 
-    const rol = await this.rolRepository.findOneBy({
-      denominacion: data.rol
-    });
+      const rol = await this.rolRepository.findOneBy({
+        denominacion: data.rol
+      });
 
-    if (!rol) {
-      console.log(`❌ No se encontró el rol "${data.rol}".`);
-      continue;
+      if (!rol) {
+        console.log(`❌ No se encontró el rol "${data.rol}".`);
+        continue;
+      }
+
+      const exists = await this.usuarioRepository.findOneBy({
+        mail: data.mail
+      });
+
+      if (exists) {
+        console.log(`⚠️ Usuario "${data.mail}" ya existe.`);
+        continue;
+      }
+
+      const contrasenaHasheada = await bcrypt.hash(data.contrasena, 10);
+
+      const usuario = this.usuarioRepository.create({
+        mail: data.mail,
+        contrasena: contrasenaHasheada,
+        denominacion: data.denominacion,
+        roles: [rol],
+      });
+
+      await this.usuarioRepository.save(usuario);
+
+      console.log(`✅ Usuario "${data.mail}" creado.`);
     }
-
-    const exists = await this.usuarioRepository.findOneBy({
-      mail: data.mail
-    });
-
-    if (exists) {
-      console.log(`⚠️ Usuario "${data.mail}" ya existe.`);
-      continue;
-    }
-
-    const contrasenaHasheada = await bcrypt.hash(data.contrasena, 10);
-
-    const usuario = this.usuarioRepository.create({
-      mail: data.mail,
-      contrasena: contrasenaHasheada,
-      denominacion: data.denominacion,
-      roles: [rol], 
-    });
-
-    await this.usuarioRepository.save(usuario);
-
-    console.log(`✅ Usuario "${data.mail}" creado.`);
   }
-}
 
 
   // Ejecutar todos los seeds
   async runAllSeeds() {
     console.log('🚀 Iniciando todos los seeds...');
-  
+
     await this.seedRol();
     await this.seedUsuario();
     console.log('✅ Todos los seeds completados.');

@@ -31,6 +31,13 @@ export function DatosCards({ linea, onEditar, onInfo, onDelete }: Props) {
         )}
       </div>
 
+      <div className="mb-2">
+        <p className="text-xs text-gray-500">SuperLínea</p>
+        <p className="text-sm font-medium text-gray-800 line-clamp-1">
+          {linea.superLinea?.denominacion || linea.superlinea?.denominacion || "-"}
+        </p>
+      </div>
+
       {linea.observacion && (
         <div className="mb-3">
           <p className="text-xs text-gray-500">Observación</p>

@@ -9,14 +9,12 @@ import {
   Index,
 } from 'typeorm';
 
-import { Producto } from '../../../producto/domain/entities/producto.entity';
-import { SuperLinea } from '../../../superlinea/domain/entities/super-linea.entity';
-import { ManyToOne, JoinColumn } from 'typeorm';
+import { Linea } from 'src/modules/gestion-productos/linea/domain/entities/linea.entity';
 import { CantidadColumn } from 'src/modules/common/decorators/cantidad-column.decorator';
 
-@Entity('linea')
+@Entity('super_linea')
 @Index(['denominacion', 'deletedAt'], { unique: true })
-export class Linea {
+export class SuperLinea {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -26,18 +24,9 @@ export class Linea {
   @Column({ type: 'text', nullable: true })
   observacion?: string;
 
-  @OneToMany(() => Producto, (producto) => producto.linea)
-  productos: Producto[];
+  @OneToMany(() => Linea, (linea) => linea.superLinea)
+  lineas: Linea[];
 
-  @ManyToOne(() => SuperLinea, (superLinea) => superLinea.lineas, {
-    nullable: true,
-  })
-  @JoinColumn({ name: 'super_linea_id' })
-  superLinea: SuperLinea;
-
-  @Column({ name: 'super_linea_id', type: 'int', nullable: true })
-  superLineaId?: number;
- 
   @Column('boolean', { default: false })
   utilizaStockMinimo: boolean;
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   forwardRef,
   Inject,
@@ -18,6 +19,8 @@ import { LineaMapper } from '../../mappers/linea.mapper';
 import { PoliticaEliminacionLinea } from '../../domain/services/politica-eliminacion-linea.service';
 import { Linea } from '../../domain/entities/linea.entity';
 
+import { SuperLineaService } from 'src/modules/gestion-productos/superlinea/application/services/super-linea.service';
+
 @Injectable()
 export class LineaService {
   private readonly logger = new Logger(LineaService.name);
@@ -28,20 +31,23 @@ export class LineaService {
     @Inject(forwardRef(() => PoliticaEliminacionLinea))
     private readonly validacionesService: PoliticaEliminacionLinea,
     private readonly usuarioService: UsuarioService,
-
+    private readonly superLineaService: SuperLineaService,
   ) { }
 
   private readonly ENTITY_NAME = 'Linea';
 
   async create(dto: CreateLineaDto) {
     this.logger.log(
-      `Creando un nuevo ${this.ENTITY_NAME} con denominación: ${dto.denominacion} a: ${dto.denominacion}`,
+      `Creando un nuevo ${this.ENTITY_NAME} con denominación: ${dto.denominacion}`,
     );
     await this.checkDenominacionExists(dto.denominacion, 0);
 
+    if (!dto.superLineaId) {
+      throw new BadRequestException('Una Línea debe tener una SuperLínea asociada.');
+    }
+    await this.superLineaService.findEntityById(dto.superLineaId);
 
     const entity = await this.repository.create(dto);
-
 
     return MessageFrontUtils.createSimple(
       `${this.ENTITY_NAME}`,
@@ -51,14 +57,17 @@ export class LineaService {
   }
 
   async update(id: number, dto: UpdateLineaDto) {
-    this.logger.log(`Actualizando  ${this.ENTITY_NAME} con ID: ${id}`);
-
+    this.logger.log(`Actualizando ${this.ENTITY_NAME} con ID: ${id}`);
 
     const linea = await this.findEntityById(id); // Verifica existencia
     ensureNotSistemaEntity(linea, 'Linea');
     if (dto.denominacion)
       await this.checkDenominacionExists(dto.denominacion, id);
 
+    if (dto.superLineaId === null || dto.superLineaId === undefined) {
+      throw new BadRequestException('Una Línea debe tener una SuperLínea asociada.');
+    }
+    await this.superLineaService.findEntityById(dto.superLineaId);
 
     const entity = await this.repository.update(id, dto);
     return MessageFrontUtils.createSimple(

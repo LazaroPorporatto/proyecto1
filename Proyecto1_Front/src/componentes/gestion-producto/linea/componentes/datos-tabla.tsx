@@ -33,6 +33,16 @@ export function DatosTabla({ lineas, onEditar, onInfo, onDelete }: Props) {
       ),
     },
     {
+      header: "SuperLínea",
+      accessor: "superLinea" as any,
+      formatFunction: ({ row }) => (
+        <span>
+          {row.superLinea?.denominacion || row.superlinea?.denominacion || "-"}
+        </span>
+      ),
+      width: 180,
+    },
+    {
       header: "Observación",
       accessor: "observacion",
       ...observacionesColumnProps,

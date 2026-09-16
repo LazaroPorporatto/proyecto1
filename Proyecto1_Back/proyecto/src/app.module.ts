@@ -29,6 +29,8 @@ import { ClienteOperacionModule } from './modules/organizacion/cliente-operacion
 import { ProductoOperacionModule } from './modules/gestion-productos/producto-operacion/producto-operacion.module';
 import { BusquedasModule } from './modules/gestion-documentos/busquedas/busquedas.module';
 
+import { SuperLineaModule } from './modules/gestion-productos/superlinea/superlinea.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -52,6 +54,7 @@ import { BusquedasModule } from './modules/gestion-documentos/busquedas/busqueda
       ssl: process.env.DB_SSL === 'true',
     }),
 
+    SuperLineaModule,
     MarcaModule,
     LineaModule,
     ProductoModule,

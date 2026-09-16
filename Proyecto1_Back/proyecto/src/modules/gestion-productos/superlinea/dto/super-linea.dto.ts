@@ -8,15 +8,15 @@ import {
   IsString,
 } from 'class-validator';
 
-export class LineaDto {
-  @ApiProperty({ example: 123, description: 'ID del la linea' })
+export class SuperLineaDto {
+  @ApiProperty({ example: 1, description: 'ID de la SuperLínea' })
   @Type(() => Number)
   @IsInt()
   id: number;
 
   @ApiProperty({
-    example: 'tornillos',
-    description: 'Denominación o nombre dela linea',
+    example: 'ALIMENTOS',
+    description: 'Denominación o nombre de la SuperLínea',
   })
   @IsString()
   denominacion: string;
@@ -32,27 +32,18 @@ export class LineaDto {
 
   @ApiProperty({
     example: '',
-    description: 'Observaciones varias sobre la linea',
+    description: 'Observaciones sobre la SuperLínea',
   })
   @IsString()
   observacion: string;
 
   @ApiProperty({
-    example: 1,
-    description: 'de sistema no se puede editar ni eliminar',
+    example: 0,
+    description: 'De sistema, no se puede editar ni eliminar si es 1',
   })
   @Type(() => Number)
   @IsInt()
   sistema: number;
-
-  @ApiProperty({ example: 1, description: 'ID de la SuperLínea' })
-  @Type(() => Number)
-  @IsInt()
-  superLineaId: number;
-
-  @ApiProperty({ description: 'SuperLínea asociada', nullable: true })
-  @IsOptional()
-  superLinea?: { id: number; denominacion: string } | null;
 
   @ApiProperty({ example: null, description: 'Fecha de eliminación (null si está activa)', nullable: true })
   @IsOptional()

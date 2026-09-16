@@ -79,6 +79,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       const entity = await this.repository
         .createQueryBuilder('producto')
         .leftJoinAndSelect('producto.linea', 'linea')
+        .leftJoinAndSelect('linea.superLinea', 'superLinea')
         .leftJoinAndSelect('producto.marca', 'marca')
         .where('producto.id = :id', { id })
         .andWhere('producto.deletedAt IS NULL')
@@ -233,17 +234,17 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       .createQueryBuilder('producto')
       .leftJoinAndSelect('producto.marca', 'marca')
       .leftJoinAndSelect('producto.linea', 'linea')
+      .leftJoinAndSelect('linea.superLinea', 'superLinea');
 
-    if (denominacion || codigoProveedor || codigoReferencia) {
+    if (denominacion && denominacion.trim() !== '') {
+      query.andWhere('UPPER(producto.denominacion) LIKE UPPER(:denominacion)', {
+        denominacion: `${denominacion.trim()}%`,
+      });
+    }
+
+    if (codigoProveedor || codigoReferencia) {
       const condiciones: string[] = [];
       const parametros: any = {};
-
-      if (denominacion) {
-        condiciones.push(
-          `UPPER(producto.denominacion) LIKE UPPER(:denominacion)`,
-        );
-        parametros.denominacion = `%${denominacion}%`;
-      }
 
       if (codigoProveedor) {
         if (codProveedorExacto) {

@@ -10,8 +10,10 @@ interface Props {
   roles:number[];
   codigo: string;
   exacto: boolean;
+  denominacion?: string;
   onChangeCodigo: (value: string) => void;
   onChangeExacto: (value: boolean) => void;
+  onChangeDenominacion?: (value: string) => void;
   onBuscarRapido: () => void;
   onNuevo: () => void;
   total: number;
@@ -25,8 +27,10 @@ export function ProductosHeader({
   roles,
   codigo,
   exacto,
+  denominacion,
   onChangeCodigo,
   onChangeExacto,
+  onChangeDenominacion,
   onBuscarRapido,
   onNuevo,
   total,
@@ -43,7 +47,22 @@ export function ProductosHeader({
           <span>Productos</span>
         </CardTitle>
 
-        {/* Buscador rápido */}
+        {/* Buscador por Denominación */}
+        {onChangeDenominacion && (
+          <div className="flex items-center gap-2">
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                value={denominacion ?? ""}
+                placeholder="Denominación..."
+                className="text-black pl-10"
+                onChange={(e) => onChangeDenominacion(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Buscador rápido por código */}
         <div className="flex items-center gap-2">
           <div className="relative max-w-xs w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

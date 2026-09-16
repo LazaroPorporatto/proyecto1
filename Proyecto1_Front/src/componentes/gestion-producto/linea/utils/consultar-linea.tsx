@@ -92,7 +92,7 @@ export default function ConsultarLineas() {
       message: "¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.",
       confirmText: "Eliminar",
       cancelText: "Cancelar",
-      onConfirm: () => {},
+      onConfirm: () => { },
     });
 
     if (!confirmed) return;
