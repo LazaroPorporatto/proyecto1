@@ -19,7 +19,7 @@ export class ProductoRepository implements IProductoRepository {
     private readonly persistenceService: ProductoPersistenceAdapter,
   ) {}
   findByIds(ids: number[]): Promise<Producto[]> {
-    throw new Error('Method not implemented.');
+    return this.persistenceService.findByIds(ids);
   }
   
 

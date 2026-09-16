@@ -18,6 +18,8 @@ import { MonetarioColumn } from 'src/modules/common/decorators/monetario-column.
 import { CantidadColumn } from 'src/modules/common/decorators/cantidad-column.decorator';
 import { PorcentajeColumn } from 'src/modules/common/decorators/porcentaje-column.decorator';
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
+import { BadRequestException } from '@nestjs/common';
+import { redondear } from 'src/modules/common/utils/number/redondeo';
 
 @Entity('producto')
 export class Producto {
@@ -172,4 +174,62 @@ export class Producto {
 
   @Column({ type: 'text', nullable: true })
   codigoReferencia?: string | null;
+
+  // ========== REGLAS DE DOMINIO: PRECIOS ==========
+
+  /**
+   * Calcula el nuevo precio a partir de un ajuste por porcentaje o monto.
+   * No modifica la entidad.
+   * @param tipo 'porcentaje' (valor en %) o 'monto' (valor en $).
+   * @param valor Valor del ajuste (positivo o negativo).
+   */
+  calcularPrecioAjustado(tipo: 'porcentaje' | 'monto', valor: number): number {
+    const precioActual = this.precio ?? 0;
+    const nuevoPrecio =
+      tipo === 'porcentaje'
+        ? precioActual * (1 + valor / 100)
+        : precioActual + valor;
+    return redondear(nuevoPrecio, 2);
+  }
+
+  /**
+   * Recalcula el margen implicito a partir del nuevo precio.
+   * Regla: precio = costo * (1 + margen/100)  =>  margen = (precio/costo - 1) * 100
+   * Si el costo no esta definido (<= 0) no se puede recalcular y se conserva el margen actual.
+   */
+  calcularPorcentajeImplicito(nuevoPrecio: number): number | null {
+    const costo = this.costo ?? 0;
+    if (costo <= 0) return null;
+    return redondear((nuevoPrecio / costo - 1) * 100, 2);
+  }
+
+  /**
+   * Fija el precio de venta validando las reglas de negocio:
+   * - El precio debe ser mayor a 0.
+   * - El precio no puede ser menor al costo (si el costo esta cargado).
+   * Recalcula el margen implicito hacia atras.
+   */
+  fijarPrecio(nuevoPrecio: number): void {
+    if (nuevoPrecio <= 0) {
+      throw new BadRequestException('El nuevo precio debe ser mayor a 0.');
+    }
+    const costo = this.costo ?? 0;
+    if (costo > 0 && nuevoPrecio < costo) {
+      throw new BadRequestException(
+        'El nuevo precio no puede ser menor al costo del producto.',
+      );
+    }
+    this.precio = redondear(nuevoPrecio, 2);
+    const nuevoPorcentaje = this.calcularPorcentajeImplicito(this.precio);
+    if (nuevoPorcentaje !== null) {
+      this.porcentaje = nuevoPorcentaje;
+    }
+  }
+
+  /**
+   * Aplica un ajuste masivo de precio (porcentaje o monto) sobre la entidad.
+   */
+  aplicarAjustePrecio(tipo: 'porcentaje' | 'monto', valor: number): void {
+    this.fijarPrecio(this.calcularPrecioAjustado(tipo, valor));
+  }
 }

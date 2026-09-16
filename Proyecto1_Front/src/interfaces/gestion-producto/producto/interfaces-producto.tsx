@@ -92,18 +92,19 @@ export interface ConsultarProductosCambioPreciosMasivo {
   denominacion: string;
   codigoProveedor: string;
   observacion: string;
-
-  precioOcasionalConIva: number;
-  precioOcasionalConIvaNuevo: number;
-  precioMayoristaConIva: number;
-  precioMayoristaConIvaNuevo: number;
-  precioClienteConIva: number;
-  precioClienteConIvaNuevo: number;
-  precioOfertaConIva: number;
-  precioOfertaConIvaNuevo: number;
-
+  costo: number;
+  stock: number;
+  precio: number;
+  precioConIva: number;
+  alicuotaIva: number;
+  porcentaje: number;
+  lineaId: number | null;
+  lineaDenominacion: string | null;
+  nuevoPrecio: number | null;
+  nuevoPorcentaje: number | null;
+  nuevoPrecioConIva: number | null;
+  error: string | null;
   dirty: boolean;
-
 }
 
 export interface ConsultarProductosListaPrecios {
@@ -111,14 +112,19 @@ export interface ConsultarProductosListaPrecios {
   denominacion: string;
   codigoProveedor: string;
   observacion: string;
+  costo: number;
   stock: number;
-  precioOcasionalConIva: number;
-  precioMayoristaConIva: number;
-  precioClienteConIva: number;
-  precioOfertaConIva: number;
-
+  precio: number;
+  precioConIva: number;
+  alicuotaIva: number;
+  porcentaje: number;
+  lineaId: number | null;
+  lineaDenominacion: string | null;
+  nuevoPrecio: number | null;
+  nuevoPorcentaje: number | null;
+  nuevoPrecioConIva: number | null;
+  error: string | null;
   dirty: boolean;
-
 }
 
 

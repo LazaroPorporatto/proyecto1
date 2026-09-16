@@ -56,6 +56,7 @@ export function TablaAGGrid<T extends Record<string, any>>({
     const baseCols = columns.map((col) => {
       const colDef: any = {
         headerName: col.header,
+        headerTooltip: String(col.header),
         field: col.accessor as string,
         editable: col.editable || false,
         flex: col.flex ?? 1,

@@ -60,6 +60,16 @@ export const menuItems: MenuItem[] = [
       },
       {
         icon: DollarSign,
+        label: "Precios",
+        path: "",
+        subMenu: [
+          { icon: Receipt, label: "Cambio de Precios", path: "cambio-precios-masivo" },
+          { icon: ClipboardList, label: "Lista de Precios", path: "lista-precios" },
+        ],
+        roles: [Rol.ADMINISTRADOR, Rol.EMPLEADO, Rol.REPOSITOR, Rol.VENDEDOR],
+      },
+      {
+        icon: DollarSign,
         label: "Configuración",
         path: "",
         subMenu: [

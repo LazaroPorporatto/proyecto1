@@ -21,26 +21,35 @@ export function useCambioPrecios(usuarioId: number | null) {
     setLoading(false);
   };
 
-  const aplicarCambios = async (porcentaje: number) => {
+  const aplicarCambios = async (tipo: "porcentaje" | "monto", valor: number) => {
     setLoading(true);
 
     const payload = {
-      items: productos,
-      porcentaje,
+      tipo,
+      valor,
+      items: productos.map((producto) => ({ id: producto.id })),
     };
 
     const productosActualizados =
       await CambioPreciosMasivoService.aplicarCambios(payload);
 
-    setProductos(productosActualizados);
+    setProductos(
+      productosActualizados.map((p: any) => ({ ...p, dirty: !p.error }))
+    );
     setLoading(false);
   };
 
-  const guardarCambios = async (): Promise<ResponsePost> => {
+  const guardarCambios = async (motivo: string): Promise<ResponsePost> => {
     setLoading(true);
 
     const payload = {
-      items: productos,
+      items: productos
+        .filter((producto) => producto.dirty && producto.nuevoPrecio !== null)
+        .map((producto) => ({
+          id: producto.id,
+          nuevoPrecio: producto.nuevoPrecio,
+        })),
+      motivo,
       usuarioCreatedId: usuarioId,
     };
 

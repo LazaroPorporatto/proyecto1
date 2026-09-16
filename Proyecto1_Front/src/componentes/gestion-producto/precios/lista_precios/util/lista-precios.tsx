@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { formatPrice } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
+import { formatPrice, formatPercentage } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
 import { Column } from "../../../../herramientas/tablas/tabla-flexible-ag-grid";
 import { Card, CardContent, CardHeader } from "../../../../ui/Card";
 import { Alertas, TipoAlerta, TituloAlerta, useAlerts } from "../../../../herramientas/alertas/alertas";
@@ -12,6 +12,7 @@ import { ConsultarProductosListaPrecios } from "../../../../../interfaces/gestio
 import { useConfiguracionSistema } from "../../../../sistema/ConfiguracionSistemaContext";
 import { useFiltrosContext } from "../../../../../context/filtros-contesxt";
 import CambioPreciosMasivoService from "../service/lista-precios-service";
+import ProductoService from "../../../producto/services/producto-service";
 import { useCatalogosContext } from "../../../../../context/catalogos-context";
 import { getUsuarioId } from "../../../../../utils/auth";
 import { useCambioPrecios } from "../hooks/useCambioPrecios";
@@ -57,6 +58,15 @@ export default function ListaPrecios() {
         ),
       },
       {
+        header: "Línea",
+        accessor: "lineaDenominacion",
+        flex: 0.6,
+        type: "text",
+        editable: false,
+        scrollable: false,
+        formatFunction: ({ value }) => <span>{value ?? "—"}</span>,
+      },
+      {
         header: "Stock",
         accessor: "stock",
         flex: 0.5,
@@ -65,8 +75,8 @@ export default function ListaPrecios() {
         align: "right",
       },
       {
-        header: "P Ocasional",
-        accessor: "precioOcasionalConIva",
+        header: "Costo",
+        accessor: "costo",
         flex: 0.5,
         type: "text",
         editable: false,
@@ -74,31 +84,31 @@ export default function ListaPrecios() {
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "P Mayorista",
-        accessor: "precioMayoristaConIva",
-        flex: 0.5,
+        header: "Precio (sin IVA)",
+        accessor: "precio",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "P Cliente",
-        accessor: "precioClienteConIva",
-        flex: 0.5,
+        header: "Precio (c/IVA)",
+        accessor: "precioConIva",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "P Oferta",
-        accessor: "precioOfertaConIva",
+        header: "Margen %",
+        accessor: "porcentaje",
         flex: 0.5,
         type: "text",
         editable: false,
         align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        formatFunction: ({ value }) => <span>{formatPercentage(value)}</span>,
       },
     ],
     []
@@ -125,97 +135,65 @@ export default function ListaPrecios() {
     setValoresFiltros,
     limpiarFiltros,
     setBuscar,
-    buscarMarcas,
-    buscarLineas,
   } = useFiltrosContext();
 
   const { productos, loading, setProductos, buscarProductos } = useCambioPrecios(usuarioId);
 
-  const { marcas, lineas, sublineas, setLineas, setMarcas, setSublineas } = useCatalogosContext();
+  const { marcas, lineas, setLineas, setMarcas } = useCatalogosContext();
 
   useEffect(() => {
     limpiarFiltros();
     setBuscar({ cont: 0, componente: "lista-precios" });
-    setFiltrosNecesarios({ marca: true, linea: true, sublinea: true });
+    setFiltrosNecesarios({ marca: true, linea: true, sublinea: false });
   }, []);
 
   const fetchMarcas = useCallback(async () => {
     setError(null);
     try {
-      const caracteresParaBusqueda = configuracion?.caracteresParaBusqueda ?? 4;
-      if (
-        valoresFiltros.denominacionMarca &&
-        valoresFiltros.denominacionMarca.length >= caracteresParaBusqueda
-      ) {
-        const marcasTotales = await CambioPreciosMasivoService.obtenerTotales(
-          { denominacion: valoresFiltros.denominacionMarca || " " },
-          "marcas"
-        );
-        setMarcas(marcasTotales.data);
-      }
+      const marcasTotales = await ProductoService.obtenerTotales(
+        { denominacion: valoresFiltros.denominacionMarca || "" },
+        "marcas"
+      );
+      const ordenadas = [...(marcasTotales.data ?? [])].sort((a: any, b: any) =>
+        (a.denominacion ?? "").localeCompare(b.denominacion ?? "")
+      );
+      setMarcas(ordenadas);
     } catch {
       setError("No se pudieron cargar las marcas.");
     }
-  }, [valoresFiltros.denominacionMarca, configuracion?.caracteresParaBusqueda]);
-
-  useEffect(() => {
-    fetchMarcas();
-  }, [buscarMarcas]);
+  }, [valoresFiltros.denominacionMarca]);
 
   const fetchLineas = useCallback(async () => {
     setError(null);
     try {
-      const caracteresParaBusqueda = configuracion?.caracteresParaBusqueda ?? 4;
-      if (
-        valoresFiltros.denominacionLinea &&
-        valoresFiltros.denominacionLinea.length >= caracteresParaBusqueda
-      ) {
-        const lineasTotales = await CambioPreciosMasivoService.obtenerTotales(
-          { denominacion: valoresFiltros.denominacionLinea || " " },
-          "lineas"
-        );
-        setLineas(lineasTotales.data);
-      }
+      const lineasTotales = await ProductoService.obtenerTotales(
+        { denominacion: valoresFiltros.denominacionLinea || "" },
+        "lineas"
+      );
+      const ordenadas = [...(lineasTotales.data ?? [])].sort((a: any, b: any) =>
+        (a.denominacion ?? "").localeCompare(b.denominacion ?? "")
+      );
+      setLineas(ordenadas);
     } catch {
       setError("No se pudieron cargar las líneas.");
     }
-  }, [valoresFiltros.denominacionLinea, configuracion?.caracteresParaBusqueda]);
+  }, [valoresFiltros.denominacionLinea]);
 
   useEffect(() => {
+    fetchMarcas();
     fetchLineas();
-  }, [buscarLineas]);
-
-  useEffect(() => {
-    const fetchSublineas = async () => {
-      setError(null);
-      try {
-        if (valoresFiltros.lineaId && valoresFiltros.lineaId !== 0) {
-          const sublineasTotales = await CambioPreciosMasivoService.obtenerTotalesPara(
-            valoresFiltros.lineaId || 0,
-            "sublineas"
-          );
-          setSublineas(sublineasTotales.data);
-        }
-      } catch {
-        setError("No se pudieron cargar las sublíneas.");
-      }
-    };
-    fetchSublineas();
-  }, [valoresFiltros.lineaId]);
+  }, []);
 
   const handleLimpiarFiltros = useCallback(() => {
     setValoresFiltros({
+      denominacion: "",
       denominacionMarca: "",
       denominacionLinea: "",
       marcaId: undefined,
       lineaId: undefined,
-      sublineaId: undefined,
     });
-    setSublineas([]);
-    setLineas([]);
-    setMarcas([]);
     setProductos([]);
-  }, [setValoresFiltros, setSublineas, setLineas, setMarcas, setProductos]);
+  }, [setValoresFiltros, setProductos]);
 
   const handleImprimir = useCallback(async () => {
     const columnasParaEnviar = columns
@@ -261,13 +239,12 @@ export default function ListaPrecios() {
                 setValoresFiltros={setValoresFiltros}
                 marcas={marcas}
                 lineas={lineas}
-                sublineas={sublineas}
                 productosLength={productos.length}
                 onBuscar={() =>
                   buscarProductos({
+                    denominacion: valoresFiltros.denominacion ?? "",
                     marcaId: valoresFiltros.marcaId,
                     lineaId: valoresFiltros.lineaId,
-                    subLineaId: valoresFiltros.sublineaId,
                   })
                 }
                 fetchMarcas={fetchMarcas}

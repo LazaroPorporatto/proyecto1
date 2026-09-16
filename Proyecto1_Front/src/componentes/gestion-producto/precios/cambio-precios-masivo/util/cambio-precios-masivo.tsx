@@ -7,11 +7,11 @@ import {
   useConfirmation,
 } from "../../../../herramientas/alertas/alertas-confirmacion";
 import { ConsultarProductosCambioPreciosMasivo } from "../../../../../interfaces/gestion-producto/producto/interfaces-producto";
-import { formatPrice } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
+import { formatPrice, formatPercentage } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
 import { Column } from "../../../../herramientas/tablas/tabla-flexible-ag-grid";
 import { useConfiguracionSistema } from "../../../../sistema/ConfiguracionSistemaContext";
 import { useFiltrosContext } from "../../../../../context/filtros-contesxt";
-import CambioPreciosMasivoService from "../cambio-precios-masivo-service";
+import ProductoService from "../../../producto/services/producto-service";
 import CambioPreciosManual from "../cambio-precios.manual";
 import { useCatalogosContext } from "../../../../../context/catalogos-context";
 import { getUsuarioId } from "../../../../../utils/auth";
@@ -37,8 +37,6 @@ export default function CambioPreciosMasivo() {
     setValoresFiltros,
     limpiarFiltros,
     setBuscar,
-    buscarMarcas,
-    buscarLineas,
   } = useFiltrosContext();
 
   const {
@@ -51,77 +49,50 @@ export default function CambioPreciosMasivo() {
     actualizarProductoLocal,
   } = useCambioPrecios(usuarioId);
 
-  const { marcas, lineas, sublineas, setLineas, setMarcas, setSublineas } = useCatalogosContext();
+  const { marcas, lineas, setLineas, setMarcas } = useCatalogosContext();
 
   useEffect(() => {
     limpiarFiltros();
     setBuscar({ cont: 0, componente: "cambio-precios-masivo" });
-    setFiltrosNecesarios({ marca: true, linea: true, sublinea: true });
+    setFiltrosNecesarios({ marca: true, linea: true, sublinea: false });
   }, []);
 
   const fetchMarcas = useCallback(async () => {
     setError(null);
     try {
-      const caracteresParaBusqueda = configuracion?.caracteresParaBusqueda ?? 4;
-      if (
-        valoresFiltros.denominacionMarca &&
-        valoresFiltros.denominacionMarca.length >= caracteresParaBusqueda
-      ) {
-        const marcasTotales = await CambioPreciosMasivoService.obtenerTotales(
-          { denominacion: valoresFiltros.denominacionMarca || " " },
-          "marcas"
-        );
-        setMarcas(marcasTotales.data);
-      }
+      const marcasTotales = await ProductoService.obtenerTotales(
+        { denominacion: valoresFiltros.denominacionMarca || "" },
+        "marcas"
+      );
+      const ordenadas = [...(marcasTotales.data ?? [])].sort((a: any, b: any) =>
+        (a.denominacion ?? "").localeCompare(b.denominacion ?? "")
+      );
+      setMarcas(ordenadas);
     } catch {
       setError("No se pudieron cargar las marcas.");
     }
-  }, [valoresFiltros.denominacionMarca, configuracion?.caracteresParaBusqueda]);
-
-  useEffect(() => {
-    fetchMarcas();
-  }, [buscarMarcas]);
+  }, [valoresFiltros.denominacionMarca]);
 
   const fetchLineas = useCallback(async () => {
     setError(null);
     try {
-      const caracteresParaBusqueda = configuracion?.caracteresParaBusqueda ?? 4;
-      if (
-        valoresFiltros.denominacionLinea &&
-        valoresFiltros.denominacionLinea.length >= caracteresParaBusqueda
-      ) {
-        const lineasTotales = await CambioPreciosMasivoService.obtenerTotales(
-          { denominacion: valoresFiltros.denominacionLinea || " " },
-          "lineas"
-        );
-        setLineas(lineasTotales.data);
-      }
+      const lineasTotales = await ProductoService.obtenerTotales(
+        { denominacion: valoresFiltros.denominacionLinea || "" },
+        "lineas"
+      );
+      const ordenadas = [...(lineasTotales.data ?? [])].sort((a: any, b: any) =>
+        (a.denominacion ?? "").localeCompare(b.denominacion ?? "")
+      );
+      setLineas(ordenadas);
     } catch {
       setError("No se pudieron cargar las líneas.");
     }
-  }, [valoresFiltros.denominacionLinea, configuracion?.caracteresParaBusqueda]);
+  }, [valoresFiltros.denominacionLinea]);
 
   useEffect(() => {
+    fetchMarcas();
     fetchLineas();
-  }, [buscarLineas]);
-
-  useEffect(() => {
-    const fetchSublineas = async () => {
-      setError(null);
-      try {
-        if (valoresFiltros.lineaId && valoresFiltros.lineaId !== 0) {
-          const sublineasTotales = await CambioPreciosMasivoService.obtenerTotalesPara(
-            valoresFiltros.lineaId || 0,
-            "sublineas"
-          );
-          setSublineas(sublineasTotales.data);
-        }
-      } catch {
-        setError("No se pudieron cargar las sublíneas.");
-      }
-    };
-    fetchSublineas();
-  }, [valoresFiltros.lineaId]);
+  }, []);
 
   const handleAbrirActualizarProducto = useCallback(
     (producto: ConsultarProductosCambioPreciosMasivo) => {
@@ -172,17 +143,14 @@ export default function CambioPreciosMasivo() {
 
   const handleLimpiarFiltros = useCallback(() => {
     setValoresFiltros({
+      denominacion: "",
       denominacionMarca: "",
       denominacionLinea: "",
       marcaId: undefined,
       lineaId: undefined,
-      sublineaId: undefined,
     });
-    setSublineas([]);
-    setLineas([]);
-    setMarcas([]);
     setProductos([]);
-  }, [setValoresFiltros, setSublineas, setLineas, setMarcas, setProductos]);
+  }, [setValoresFiltros, setProductos]);
 
   const handleActualizarSuccess = useCallback(
     (productoActualizado: ConsultarProductosCambioPreciosMasivo) => {
@@ -199,16 +167,57 @@ export default function CambioPreciosMasivo() {
     [addAlert, actualizarProductoLocal]
   );
 
-  const handleGuardarCambios = useCallback(async () => {
-    const response = await guardarCambios();
-    addAlert({
-      type: TipoAlerta.SUCCESS,
-      title: TituloAlerta.SUCCESS,
-      message: response.mensaje,
-      autoClose: true,
-      duration: 3000,
-    });
-  }, [guardarCambios, addAlert]);
+  const handleGuardarCambios = useCallback(
+    async (motivo: string) => {
+      if (!motivo || !motivo.trim()) {
+        addAlert({
+          type: TipoAlerta.ERROR,
+          title: TituloAlerta.ERROR,
+          message: "Debe ingresar un motivo para guardar los cambios.",
+          autoClose: true,
+          duration: 3000,
+        });
+        return;
+      }
+
+      const productosParaGuardar = productos.filter(
+        (p) => p.dirty && p.nuevoPrecio !== null
+      );
+      const productosInvalidos = productos.filter((p) => p.error);
+
+      if (productosParaGuardar.length === 0) {
+        addAlert({
+          type: TipoAlerta.WARNING,
+          title: TituloAlerta.WARNING,
+          message:
+            "No se guardó ningún cambio: todos los precios resultantes son inválidos (quedan negativos o por debajo del costo). Revisá los errores en rojo y corregí el ajuste.",
+          autoClose: false,
+        });
+        return;
+      }
+
+      const response = await guardarCambios(motivo);
+
+      if (productosInvalidos.length > 0) {
+        addAlert({
+          type: TipoAlerta.WARNING,
+          title: TituloAlerta.WARNING,
+          message: `Se guardaron ${productosParaGuardar.length} producto(s), pero ${productosInvalidos.length} producto(s) quedaron sin actualizar por precios no válidos (revisá los errores en rojo).`,
+          autoClose: false,
+        });
+        return;
+      }
+
+      addAlert({
+        type: TipoAlerta.SUCCESS,
+        title: TituloAlerta.SUCCESS,
+        message: response.mensaje,
+        autoClose: true,
+        duration: 3000,
+      });
+    },
+    [guardarCambios, addAlert, productos]
+  );
 
   const columns = useMemo<Column<ConsultarProductosCambioPreciosMasivo>[]>(
     () => [
@@ -247,8 +256,8 @@ export default function CambioPreciosMasivo() {
         ),
       },
       {
-        header: "P Ocasional",
-        accessor: "precioOcasionalConIva",
+        header: "Costo",
+        accessor: "costo",
         flex: 0.5,
         type: "text",
         editable: false,
@@ -256,67 +265,83 @@ export default function CambioPreciosMasivo() {
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "N Ocasional",
-        accessor: "precioOcasionalConIvaNuevo",
-        flex: 0.5,
+        header: "Precio (sin IVA)",
+        accessor: "precio",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "P Mayorista",
-        accessor: "precioMayoristaConIva",
-        flex: 0.5,
+        header: "Precio (c/IVA)",
+        accessor: "precioConIva",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
         formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
       },
       {
-        header: "N Mayorista",
-        accessor: "precioMayoristaConIvaNuevo",
-        flex: 0.5,
+        header: "Margen %",
+        accessor: "porcentaje",
+        flex: 0.4,
         type: "text",
         editable: false,
         align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        formatFunction: ({ value }) => <span>{formatPercentage(value)}</span>,
       },
       {
-        header: "P Cliente",
-        accessor: "precioClienteConIva",
-        flex: 0.5,
+        header: "Nuevo Precio (sin IVA)",
+        accessor: "nuevoPrecio",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        formatFunction: ({ value, row }) => (
+          <span className={row.error ? "text-red-500" : "text-green-600"}>
+            {value !== null && value !== undefined ? formatPrice(value, "ARS") : "—"}
+          </span>
+        ),
       },
       {
-        header: "N Cliente",
-        accessor: "precioClienteConIvaNuevo",
-        flex: 0.5,
+        header: "Nuevo Precio (c/IVA)",
+        accessor: "nuevoPrecioConIva",
+        flex: 0.6,
         type: "text",
         editable: false,
         align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        formatFunction: ({ value, row }) => (
+          <span className={row.error ? "text-red-500" : "text-green-600"}>
+            {value !== null && value !== undefined ? formatPrice(value, "ARS") : "—"}
+          </span>
+        ),
       },
       {
-        header: "P Oferta",
-        accessor: "precioOfertaConIva",
+        header: "Nuevo Margen %",
+        accessor: "nuevoPorcentaje",
         flex: 0.5,
         type: "text",
         editable: false,
         align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        formatFunction: ({ value, row }) => (
+          <span className={row.error ? "text-red-500" : "text-green-600"}>
+            {value !== null && value !== undefined ? formatPercentage(value) : "—"}
+          </span>
+        ),
       },
       {
-        header: "N Oferta",
-        accessor: "precioOfertaConIvaNuevo",
-        flex: 0.5,
+        header: "Estado",
+        accessor: "error",
+        flex: 0.7,
         type: "text",
         editable: false,
-        align: "right",
-        formatFunction: ({ value }) => <span>{formatPrice(value, "ARS")}</span>,
+        scrollable: false,
+        formatFunction: ({ value }) => (
+          <span className={value ? "text-red-500 font-medium" : "text-gray-400"}>
+            {value ?? ("" as string)}
+          </span>
+        ),
       },
     ],
     []
@@ -344,13 +369,13 @@ export default function CambioPreciosMasivo() {
                 setValoresFiltros={setValoresFiltros}
                 marcas={marcas}
                 lineas={lineas}
-                sublineas={sublineas}
+                ambito={valoresFiltros.lineaId ? "linea" : "global"}
                 productosLength={productos.length}
                 onBuscar={() =>
                   buscarProductos({
+                    denominacion: valoresFiltros.denominacion ?? "",
                     marcaId: valoresFiltros.marcaId,
                     lineaId: valoresFiltros.lineaId,
-                    subLineaId: valoresFiltros.sublineaId,
                   })
                 }
                 onAplicarCambios={aplicarCambios}
