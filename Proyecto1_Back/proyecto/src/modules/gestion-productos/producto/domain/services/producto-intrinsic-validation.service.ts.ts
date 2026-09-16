@@ -14,6 +14,7 @@ export class ProductoIntrinsicValidationService {
     precioMayorista?: number;
     precioCliente?: number;
     precioOcasional?: number;
+    cantidadPresentacion?: number;
   }): void {
     this.validarDenominacion(datos.denominacion);
     this.validarIds(datos.marcaId, datos.lineaId);
@@ -26,6 +27,8 @@ export class ProductoIntrinsicValidationService {
     if (datos.alicuotaIva !== undefined) {
       this.validarAlicuotaIva(datos.alicuotaIva);
     }
+
+    this.validarPresentacion(datos.cantidadPresentacion);
   }
 
   private validarDenominacion(denominacion: string): void {
@@ -104,6 +107,14 @@ export class ProductoIntrinsicValidationService {
     if (alicuotaIva < 0 || alicuotaIva > 100) {
       throw new BadRequestException(
         'La alícuota IVA debe estar entre 0 y 100',
+      );
+    }
+  }
+
+  private validarPresentacion(cantidadPresentacion?: number): void {
+    if (cantidadPresentacion !== undefined && cantidadPresentacion <= 0) {
+      throw new BadRequestException(
+        'La cantidad de presentación debe ser mayor a 0',
       );
     }
   }

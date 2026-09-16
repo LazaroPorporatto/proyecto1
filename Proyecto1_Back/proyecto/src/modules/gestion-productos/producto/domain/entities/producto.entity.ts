@@ -18,6 +18,7 @@ import { MonetarioColumn } from 'src/modules/common/decorators/monetario-column.
 import { CantidadColumn } from 'src/modules/common/decorators/cantidad-column.decorator';
 import { PorcentajeColumn } from 'src/modules/common/decorators/porcentaje-column.decorator';
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
+import { UnidadPresentacion } from '../../enums/unidad-presentacion.enum';
 import { BadRequestException } from '@nestjs/common';
 import { redondear } from 'src/modules/common/utils/number/redondeo';
 
@@ -152,11 +153,11 @@ export class Producto {
   marcaId?: number;
 
 
-  @Column({ default: false })
-  utilizaPack: boolean;
+  @Column({ type: 'enum', enum: UnidadPresentacion, default: UnidadPresentacion.UNIDAD })
+  unidadPresentacion: UnidadPresentacion;
 
-  @Column({ type: 'int', nullable: true })
-  cantidadPorPack: number | null;
+  @CantidadColumn()
+  cantidadPresentacion: number;
 
   @Column({ type: 'text', nullable: true })
   imagen?: string;

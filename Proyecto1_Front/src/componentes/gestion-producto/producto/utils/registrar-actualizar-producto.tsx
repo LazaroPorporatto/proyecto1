@@ -9,7 +9,7 @@ import { Card } from "../../../ui/Card";
 import ProductoService from "../services/producto-service";
 import PriceInput from "../../../herramientas/formateo-de-campos/price-input";
 import CantidadesInput from "../../../herramientas/formateo-de-campos/cantidades-input";
-import { Producto, SelectPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
+import { Producto, SelectPresentacion, UnidadPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { SelectMarca } from "../../../../interfaces/gestion-producto/marca/interfaces-marca";
 import { Linea, SelectLinea } from "../../../../interfaces/gestion-producto/linea/interfaces-linea";
 import { AlicuotaIva, ResponsePost } from "../../../../interfaces/generales/interfaces-generales";
@@ -30,7 +30,6 @@ import { getUsuarioId } from "../../../../utils/auth";
 import RegistrarActualizarLineaForm from "../../linea/utils/registrar-actualizar-linea";
 import PorcentajeInput from "../../../herramientas/formateo-de-campos/porcentaje-input";
 
-
 export default function RegistrarActualizarProductoForm({
   producto,
   onClose,
@@ -45,18 +44,23 @@ export default function RegistrarActualizarProductoForm({
 
   const { configuracion } = useConfiguracionSistema();
   const [rStockCritico, setStockCritico] = useState(false);
-  const [pack, setPack] = useState(false);
   const [usaOferta, setUsaOferta] = useState(false);
   const [lineaSeleccionada, setLineaSeleccionada] = useState<Linea>({} as Linea);
+
+  // CR-005: guarda la última denominación autogenerada, para saber si el
+  // usuario la sobreescribió manualmente y no pisarla.
+  const ultimaDenominacionAutoRef = useRef<string>("");
 
   console.log("Configuración del sistema:", configuracion);
 
   const methods = useForm<FormValues>({
-    resolver: yupResolver(schema(rStockCritico, pack, usaOferta)),
+    resolver: yupResolver(schema(rStockCritico, false, usaOferta)) as any,
     defaultValues: producto
       ? transformData(producto)
       : {
           alicuotaIva: AlicuotaIva.ALICUOTA_21,
+          unidadPresentacion: UnidadPresentacion.UNIDAD,
+          cantidadPresentacion: 1,
         },
   });
 
@@ -69,9 +73,7 @@ export default function RegistrarActualizarProductoForm({
   } = methods;
 
   console.log("estos son los errores", errors);
-
   console.log("Producto que llega al formulario", producto);
-
   console.log("linea seleccionada", lineaSeleccionada);
 
   const [marcas, setMarcas] = React.useState<SelectMarca[]>([]);
@@ -87,10 +89,12 @@ export default function RegistrarActualizarProductoForm({
 
   const stock = watch(`stock`);
   const stockMinimo = watch("stockMinimo");
-  const cantidadPorPack = watch("cantidadPorPack");
   const utilizaStockMinimo = watch("utilizaStockMinimo");
-  const utilizaPack = watch("utilizaPack");
-  
+  const unidadPresentacion = watch("unidadPresentacion");
+  const cantidadPresentacion = watch("cantidadPresentacion");
+  const marcaIdActual = watch("marcaId");
+  const lineaIdActual = watch("lineaId");
+  const denominacionActual = watch("denominacion");
 
   //=============================== CONSTANTES PARA MOVIMIENTO ENTRE CAMPOS ==================================
   const denominacionProductoRef = useRef<HTMLInputElement>(null);
@@ -116,11 +120,7 @@ export default function RegistrarActualizarProductoForm({
     if (!utilizaStockMinimo) {
       setValue("stockMinimo", 0);
     }
-    if (!utilizaPack) {
-      setValue("cantidadPorPack", 0);
-    }
-    
-  }, [utilizaStockMinimo, utilizaPack, false, setValue]);
+  }, [utilizaStockMinimo, setValue]);
 
   useEffect(() => {
     setValue("stockMinimo", lineaSeleccionada.stockMinimo || 0);
@@ -128,10 +128,41 @@ export default function RegistrarActualizarProductoForm({
   }, [lineaSeleccionada]);
 
   useEffect(() => {
-    setPack(utilizaPack || false);
     setStockCritico(utilizaStockMinimo || false);
     setUsaOferta(false);
-  }, [utilizaPack, utilizaStockMinimo, false]);
+  }, [utilizaStockMinimo]);
+
+  // CR-005: sugiere la denominación automáticamente (Marca + Línea + Presentación)
+  // Solo en alta de producto nuevo (no al editar uno existente), y solo si el
+  // usuario no escribió manualmente algo distinto a la última sugerencia.
+  useEffect(() => {
+    if (producto) return; // no autocompletar al editar un producto existente
+
+    if (!marcaIdActual || !lineaIdActual) return;
+
+    const fueEditadaManualmente =
+      denominacionActual &&
+      denominacionActual.trim() !== "" &&
+      denominacionActual !== ultimaDenominacionAutoRef.current;
+
+    if (fueEditadaManualmente) return;
+
+    const timeoutId = setTimeout(async () => {
+      const resultado = await ProductoService.sugerirDenominacion(
+        marcaIdActual,
+        lineaIdActual,
+        unidadPresentacion || UnidadPresentacion.UNIDAD,
+        cantidadPresentacion || 1,
+      );
+
+      if (resultado?.denominacion) {
+        ultimaDenominacionAutoRef.current = resultado.denominacion;
+        setValue("denominacion", resultado.denominacion, { shouldValidate: true });
+      }
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [marcaIdActual, lineaIdActual, unidadPresentacion, cantidadPresentacion, producto]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +174,6 @@ export default function RegistrarActualizarProductoForm({
           setValue("marcaId", producto.marca.id || 0);
           setSelectedMarca(producto.marca);
 
-          
           setValue("denominacion", producto.denominacion || "");
           setValue("observacion", producto.observacion || null);
           setValue("codigoProveedor", producto.codigoProveedor || "");
@@ -151,16 +181,14 @@ export default function RegistrarActualizarProductoForm({
           setValue("stock", producto.stock || 0);
           setValue("costo", producto.costo || 0);
           
-          //setValue("oferta", producto.oferta || false);
           setValue("alicuotaIva", producto.alicuotaIva || 0);
 
           setValue("stockMinimo", producto.stockMinimo || 0);
           setValue("utilizaStockMinimo", producto.utilizaStockMinimo || false);
-          setValue("cantidadPorPack", producto.cantidadPorPack || 0);
-          setValue("utilizaPack", producto.utilizaPack || false);
+          setValue("unidadPresentacion", producto.unidadPresentacion || UnidadPresentacion.UNIDAD);
+          setValue("cantidadPresentacion", producto.cantidadPresentacion || 1);
         
           console.error("llega aca", producto);
-        
         }
       } catch (error) {
         console.error("Error al obtener los datos:", error);
@@ -174,7 +202,6 @@ export default function RegistrarActualizarProductoForm({
     let response: ResponsePost;
 
     try {
-      // ⚠️ Validar si hay ítems sin agregar
       if (itemProdAlternativoSinAgregar) {
         const mensaje = [
           itemProdAlternativoSinAgregar ? "- Hay un producto alternativo sin agregar." : "",
@@ -186,7 +213,7 @@ export default function RegistrarActualizarProductoForm({
 
         const confirmar = window.confirm(mensaje);
 
-        if (!confirmar) return; // el usuario canceló
+        if (!confirmar) return;
       }
 
       if (producto) {
@@ -237,7 +264,6 @@ export default function RegistrarActualizarProductoForm({
           console.log("No se encontró una marca con la denominación ingresada.");
         }
       }
-      
     } catch (error) {
       console.error("Error al buscar por código:", error);
     }
@@ -255,7 +281,6 @@ export default function RegistrarActualizarProductoForm({
         handleBuscarPorDenominacion("MARCA");
       }
 
-      // Esperar un poco (opcional, si el botón hace una búsqueda antes)
       setTimeout(() => {
         let selectDiv: HTMLDivElement | null = null;
 
@@ -282,11 +307,9 @@ export default function RegistrarActualizarProductoForm({
             input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
           }
         }
-      }, 300); // Ajustá este delay según el tiempo de búsqueda, si es necesario
+      }, 300);
     }
   };
-
-
 
   return (
     <div className="fixed inset-0 flex items-start justify-center bg-black bg-opacity-50 z-50 overflow-y-auto py-5">
@@ -320,8 +343,6 @@ export default function RegistrarActualizarProductoForm({
                         inputRef={denominacionProductoRef}
                       />
                     </div>
-
-                    
                   </div>
 
                   <FormInput
@@ -344,24 +365,6 @@ export default function RegistrarActualizarProductoForm({
                     inputRef={codigoBarraRef}
                     onKeyDown={(e) => handleEnterEnSelect(e, "ALICUOTA-IVA")}
                   />
-
-                  {/* <FormInput
-                    name="costo"
-                    label="Costo"
-                    placeholder="Ingresa el costo"
-                  />
-
-                  <FormInput
-                    name="precio"
-                    label="Precio"
-                    placeholder="Ingresa el precio"
-                  />
-
-                  <FormInput
-                    name="porcentaje"
-                    label="Porcentaje"
-                    placeholder="Ingresa el porcentaje"
-                  /> */}
 
                   <PriceInput
                     name="costo"
@@ -386,9 +389,6 @@ export default function RegistrarActualizarProductoForm({
                     onChange={(value) => setValue("porcentaje", value, { shouldValidate: true })}
                     disabled={producto && producto.sistema > 0 ? true : false}
                   />
-
-                  
-
 
                   <FormInput
                     name="ubicacion"
@@ -481,78 +481,89 @@ export default function RegistrarActualizarProductoForm({
                     />
                   </div>
 
-                  
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 min-w-[140px]">
-                    <div className="col-span-full flex flex-wrap gap-4 mt-8">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          {...methods.register("utilizaPack")}
-                          className={`w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500`}
-                          disabled={producto && producto.sistema > 0 ? true : false}
-                        />
+                  {/* NUEVA SECCIÓN: Presentación del Producto (CR-002 con soporte decimal 1.5) */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 flex-1 min-w-[220px]">
+                    <div className="flex-1 w-full">
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Unidad Presentación *
                       </label>
+                      <select
+                        {...methods.register("unidadPresentacion")}
+                        value={unidadPresentacion || UnidadPresentacion.UNIDAD}
+                        onChange={(e) => setValue("unidadPresentacion", e.target.value as UnidadPresentacion)}
+                        disabled={producto && producto.sistema > 0 ? true : false}
+                        className="w-full border border-gray-300 rounded-md p-2 text-sm text-black bg-white focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value={UnidadPresentacion.UNIDAD}>Unidad</option>
+                        <option value={UnidadPresentacion.LITRO}>Litros (L)</option>
+                        <option value={UnidadPresentacion.MILILITRO}>Mililitros (ML)</option>
+                        <option value={UnidadPresentacion.KILOGRAMO}>Kilogramos (KG)</option>
+                        <option value={UnidadPresentacion.GRAMO}>Gramos (GR)</option>
+                        <option value={UnidadPresentacion.PACK}>Pack</option>
+                        <option value={UnidadPresentacion.CAJA}>Caja</option>
+                      </select>
                     </div>
 
-                    <CantidadesInput
-                      name={`cantidadPorPack`}
-                      label="Cantidad Pack"
-                      value={cantidadPorPack || 0}
-                      onChange={(value) => setValue(`cantidadPorPack`, Number(value))}
-                      disabled={utilizaPack ? false : true}
-                    />
+                    <div className="flex-1 w-full">
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Cantidad Presentación *
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.01"
+                        {...methods.register("cantidadPresentacion", { valueAsNumber: true })}
+                        className="w-full border border-gray-300 rounded-md p-2 text-sm text-black bg-white focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Ej: 1, 1.5, 6"
+                        disabled={producto && producto.sistema > 0 ? true : false}
+                      />
+                      {errors.cantidadPresentacion && (
+                        <small className="text-red-500">{String(errors.cantidadPresentacion.message)}</small>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col w-full gap-2">
+                <LineasSelector
+                  denominacionLinea={denominacionLinea}
+                  setDenominacionLinea={setDenominacionLinea}
+                  denominacionLineaRef={denominacionLineaRef}
+                  selectLineaRef={selectLineaRef}
+                  lineas={lineas}
+                  selectedLinea={selectedLinea}
+                  lineaId={watch("lineaId")}
+                  disabled={producto && producto.sistema > 0}
+                  errors={errors}
+                  onEnterLinea={(e) => handleEnterEnSelect(e, "LINEA")}
+                  onEnterDenominacion={enterToDenominacionMarca}
+                  onLineaChange={(linea) => {
+                    methods.setValue("lineaId", linea?.id || 0);
+                    setLineaSeleccionada(linea as any);
+                  }}
+                  onAgregarLinea={() => setMostrarFormularioLinea(true)}
+                />
 
-              <LineasSelector
-                denominacionLinea={denominacionLinea}
-                setDenominacionLinea={setDenominacionLinea}
-                denominacionLineaRef={denominacionLineaRef}
-                selectLineaRef={selectLineaRef}
-                lineas={lineas}
-                selectedLinea={selectedLinea}
-                lineaId={watch("lineaId")}
-                disabled={producto && producto.sistema > 0}
-                errors={errors}
-                onEnterLinea={(e) => handleEnterEnSelect(e, "LINEA")}
-                onEnterDenominacion={enterToDenominacionMarca}
-                onLineaChange={(linea) => {
-                  methods.setValue("lineaId", linea?.id || 0);
-                  setLineaSeleccionada(linea as any);
-                }}
-                onAgregarLinea={() => setMostrarFormularioLinea(true)}
-              />
-
-              <MarcasSelector
-                denominacionMarca={denominacionMarca}
-                setDenominacionMarca={setDenominacionMarca}
-                denominacionMarcaRef={denominacionMarcaRef}
-                selectMarcaRef={selectMarcaRef}
-                marcas={marcas}
-                selectedMarca={selectedMarca}
-                marcaId={watch("marcaId")}
-                disabled={producto && producto.sistema > 0}
-                error={errors.marcaId?.message}
-                onEnterMarca={(e) => handleEnterEnSelect(e, "MARCA")}
-                onChangeMarca={(marca) => {
-                  methods.setValue("marcaId", marca?.id || 0);
-                }}
-                onAgregarMarca={() => setMostrarFormularioMarca(true)}
-              />
-
+                <MarcasSelector
+                  denominacionMarca={denominacionMarca}
+                  setDenominacionMarca={setDenominacionMarca}
+                  denominacionMarcaRef={denominacionMarcaRef}
+                  selectMarcaRef={selectMarcaRef}
+                  marcas={marcas}
+                  selectedMarca={selectedMarca}
+                  marcaId={watch("marcaId")}
+                  disabled={producto && producto.sistema > 0}
+                  error={errors.marcaId?.message}
+                  onEnterMarca={(e) => handleEnterEnSelect(e, "MARCA")}
+                  onChangeMarca={(marca) => {
+                    methods.setValue("marcaId", marca?.id || 0);
+                  }}
+                  onAgregarMarca={() => setMostrarFormularioMarca(true)}
+                />
               </div>
 
-              {/* Segunda fila */}
-
-
               <hr className="col-span-full my-2 border-gray-300" />
-
-              
-              
             </CardContent>
 
             {errors.root?.message && <div className="text-red-600 text-center mb-4">{String(errors.root.message)}</div>}
@@ -582,7 +593,6 @@ export default function RegistrarActualizarProductoForm({
           />
         )}
 
-
         {mostrarFormularioMarca && (
           <RegistrarActualizarMarcaForm
             onClose={() => setMostrarFormularioMarca(false)}
@@ -592,8 +602,6 @@ export default function RegistrarActualizarProductoForm({
             }}
           />
         )}
-
-       
       </Card>
     </div>
   );

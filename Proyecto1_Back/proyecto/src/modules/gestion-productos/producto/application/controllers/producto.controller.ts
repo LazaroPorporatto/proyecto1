@@ -31,6 +31,7 @@ import { NormalizeDenominacionSearchPipe } from 'src/modules/common/pipes/normal
 import { DenominacionBusquedaDto } from 'src/modules/common/dto/denominacion-busqueda.dto';
 import { SearchProductoRapidoDto } from '../../dto/search-producto-rapido.dto';
 import { ProductoService } from '../services/producto.service';
+import { SugerirDenominacionDto } from '../../dto/sugerir-denominacion.dto';
 
 
 @ApiTags('Gestion Productos')
@@ -49,6 +50,12 @@ export class ProductoController {
   create(@Body() createDto: CreateProductoDto) {
     this.logger.log(`Creando un nuevo ${this.ENTITY_NAME}...`);
     return this.service.create(createDto);
+  }
+
+  @Get('sugerir-denominacion')
+  @Roles('Root', 'Administrador', 'Empleado', 'Repartidor', 'Repositor')
+  async sugerirDenominacion(@Query() dto: SugerirDenominacionDto) {
+    return this.service.sugerirDenominacion(dto);
   }
   
   @Get('find-all-for-marcas/select')

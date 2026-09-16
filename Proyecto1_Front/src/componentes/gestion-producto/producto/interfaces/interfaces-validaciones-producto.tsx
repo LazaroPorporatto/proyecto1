@@ -1,7 +1,7 @@
 import * as yup from "yup";
 import { ItemsProdAlternativoEnPayload } from "./interfaces-validaciones-item-prod-alternativo";
 import { AlicuotaIva } from "../../../../interfaces/generales/interfaces-generales";
-import { Producto } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
+import { Producto, UnidadPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
 import { ItemProveedor } from "../../../../interfaces/gestion-producto/producto/interfaces-item-proveedor";
 import { ItemProdAlternativo } from "../../../../interfaces/gestion-producto/producto/interfaces-item-prod-alternativo";
 
@@ -28,9 +28,9 @@ export interface FormValues {
   /* ubicacion?: string | null;
   presentacionId: number; */
   stockMinimo?: number;
-  cantidadPorPack?: number;
   utilizaStockMinimo?: boolean;
-  utilizaPack?: boolean;
+  unidadPresentacion: UnidadPresentacion;
+  cantidadPresentacion: number;
  /*  porcentajeOcasional: number;
   precioOcasional: number;
   porcentajeMayorista: number;
@@ -50,7 +50,7 @@ export interface ItemsProveedorEnPayload {
 
 //===================== schema de validacion ============================================//
 
-export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOferta: boolean) =>
+export const schema = (utilizaStockMinimo: boolean, utilizaPack?: boolean, usaOferta?: boolean) =>
   yup.object().shape({
     denominacion: yup
       .string()
@@ -79,13 +79,13 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       .number()
       .typeError("La linea es obligatoria.")
       .required("La marca es obligatoria.")
-      .transform((value, originalValue) => (originalValue === "" ? null : value)) // Si el valor es una cadena vacía, lo convierte en null.
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
       .required("La marca es obligatoria."),
     lineaId: yup
       .number()
       .typeError("La marca es obligatoria.")
       .required("La línea es obligatoria.")
-      .transform((value, originalValue) => (originalValue === "" ? null : value)) // Si el valor es una cadena vacía, lo convierte en null.
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
       .required("La linea es obligatoria."),
     alicuotaIva: yup
       .number()
@@ -107,50 +107,16 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOfe
       then: (schema) => schema.required("El Stock minimo es obligatorio.").moreThan(0, "El stock minimo debe ser mayor a 0."),
       otherwise: (schema) => schema.optional(),
     }),
-    cantidadPorPack: yup.number().when([], {
-      is: () => utilizaPack,
-      then: (schema) => schema.required("La cantidad por pack es obligatoria.").moreThan(0, "La cantidad por pack debe ser mayor a 0."),
-      otherwise: (schema) => schema.optional(),
-    }),
-   /*  cantidadOferta: yup.number().when([], {
-      is: () => usaOferta,
-      then: (schema) => schema.required("La cantidad de oferta es obligatoria.").moreThan(0, "La cantidad de oferta debe ser mayor a 0."),
-      otherwise: (schema) => schema.optional(),
-    }), */
-    utilizaPack: yup.boolean().optional(),
+    unidadPresentacion: yup
+      .string()
+      .oneOf(Object.values(UnidadPresentacion), "Unidad de presentación inválida.")
+      .required("La unidad de presentación es obligatoria."),
+    cantidadPresentacion: yup
+      .number()
+      .typeError("La cantidad de presentación debe ser un valor numérico.")
+      .required("La cantidad de presentación es obligatoria.")
+      .moreThan(0, "La cantidad de presentación debe ser mayor a 0."),
     utilizaStockMinimo: yup.boolean().optional(),
-    /* porcentajeOcasional: yup
-      .number()
-      .typeError("El porcentaje ocasional es obligatorio.")
-      .required("El porcentaje ocasional es obligatorio.")
-      .moreThan(0, "El porcentaje ocasional debe ser mayor a 0."),
-    porcentajeMayorista: yup
-      .number()
-      .typeError("El porcentaje mayorista es obligatorio.")
-      .required("El porcentaje mayorista es obligatorio.")
-      .moreThan(0, "El porcentaje mayorista debe ser mayor a 0."),
-    porcentajeCliente: yup
-      .number()
-      .typeError("El porcentaje cliente es obligatorio.")
-      .required("El porcentaje cliente es obligatorio.")
-      .moreThan(0, "El porcentaje cliente debe ser mayor a 0."),
-    oferta: yup.boolean().optional(),
-    precioOcasional: yup
-      .number()
-      .typeError("El precio ocasional es obligatorio.")
-      .required("El precio ocasional es obligatorio."),
-    precioMayorista: yup
-      .number()
-      .typeError("El precio mayorista es obligatorio.")
-      .required("El precio mayorista es obligatorio."),
-    precioCliente: yup
-      .number()
-      .typeError("El precio cliente es obligatorio.")
-      .required("El precio cliente es obligatorio."),
-    precioOferta: yup
-      .number()
-      .typeError("El precio oferta es obligatorio.")
-      .required("El precio oferta es obligatorio."), */
   });
 
 //===================== transform data ============================================//
@@ -166,32 +132,13 @@ export const transformData = (producto: Producto): FormValues => {
     costo: producto.costo ?? null,
     precio: producto.precio ?? null,
     porcentaje: producto.porcentaje ?? null,
-   // oferta: producto.oferta ?? null,
-    /* costoEnDolar: producto.costoEnDolar ?? null,
-    costoDolar: producto.costoDolar ?? null,
-    destacado: producto.destacado ?? null,
-    
-    envioGratis: producto.envioGratis ?? null, */
     alicuotaIva: producto.alicuotaIva ?? null,
-   // ubicacion: producto.ubicacion ?? null,
     marcaId: producto.marca.id ?? 0,
     lineaId: producto.linea.id ?? 0,
-   /*  subLineaId: producto.sublinea?.id ?? 0,
-    presentacionId: producto.presentacion.id ?? 0,
- */
     stockMinimo: producto.stockMinimo ?? null,
-    cantidadPorPack: producto.cantidadPorPack ?? null,
     utilizaStockMinimo: producto.utilizaStockMinimo,
-    utilizaPack: producto.utilizaPack,
- //   cantidadOferta: producto.cantidadOferta ?? 0,
-   /*  porcentajeOcasional: producto.porcentajeOcasional ?? 0,
-    porcentajeMayorista: producto.porcentajeMayorista ?? 0,
-    porcentajeCliente: producto.porcentajeCliente ?? 0,
-    precioOcasional: producto.precioOcasional ?? 0,
-    precioMayorista: producto.precioMayorista ?? 0,
-    precioCliente: producto.precioCliente ?? 0,
-    precioOferta: producto.precioOferta ?? 0,
-     */
+    unidadPresentacion: producto.unidadPresentacion ?? UnidadPresentacion.UNIDAD,
+    cantidadPresentacion: producto.cantidadPresentacion ?? 1,
   };
 };
 

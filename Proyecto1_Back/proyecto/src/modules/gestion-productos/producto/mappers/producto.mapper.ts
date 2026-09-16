@@ -4,6 +4,7 @@ import { GetProductoDto } from '../dto/get-producto.dto';
 import { UpdatePrecioDto } from '../dto/update-precio.dto';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { ProductoDto } from '../dto/producto.dto';
+import { UnidadPresentacion } from '../enums/unidad-presentacion.enum';
 
 import {
   toReferenciaDto,
@@ -39,8 +40,8 @@ export class ProductoMapper {
       utilizaStockMinimo: entity.utilizaStockMinimo,
 
       stockMinimo: entity.stockMinimo,
-      utilizaPack: entity.utilizaPack,
-      cantidadPorPack: entity.cantidadPorPack ?? 0,
+      unidadPresentacion: entity.unidadPresentacion ?? UnidadPresentacion.UNIDAD,
+      cantidadPresentacion: entity.cantidadPresentacion ?? 1,
       sistema: entity.sistema,
       codigoReferencia: entity.codigoReferencia ?? '',
 
@@ -93,8 +94,8 @@ export class ProductoMapper {
       ubicacion: entity.ubicacion ?? '',
       utilizaStockMinimo: entity.utilizaStockMinimo ?? false,
       stockMinimo: entity.stockMinimo ?? 0,
-      utilizaPack: entity.utilizaPack ?? false,
-      cantidadPorPack: entity.cantidadPorPack ?? 0,
+      unidadPresentacion: entity.unidadPresentacion ?? UnidadPresentacion.UNIDAD,
+      cantidadPresentacion: entity.cantidadPresentacion ?? 1,
       sistema: entity.sistema,
       codigoReferencia: entity.codigoReferencia ?? '',
 

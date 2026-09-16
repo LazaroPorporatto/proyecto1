@@ -11,6 +11,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { AlicuotaIva } from 'src/modules/organizacion/enums/alicuota-iva.enum';
+import { UnidadPresentacion } from '../enums/unidad-presentacion.enum';
 
 export class CreateProductoDto {
   @Transform(({ value }) => value.trim().toLowerCase())
@@ -77,12 +78,19 @@ export class CreateProductoDto {
   @IsNumber()
   costo?: number;
 
-  @IsBoolean()
-  utilizaPack: boolean;
+  @IsEnum(UnidadPresentacion, {
+    message: 'unidadPresentacion debe ser un valor válido del catálogo.',
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? UnidadPresentacion[value.toUpperCase() as keyof typeof UnidadPresentacion]
+      : value,
+  )
+  unidadPresentacion: UnidadPresentacion;
 
   @IsOptional()
-  @IsInt()
-  cantidadPorPack?: number;
+  @IsNumber()
+  cantidadPresentacion?: number;
 
   @IsOptional()
   @IsNumber()

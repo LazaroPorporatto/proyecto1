@@ -27,6 +27,8 @@ import { ProductoRelatedEntitiesValidator } from '../../infraestructure/validato
 import { ProductoUniquenessValidator } from '../../infraestructure/validators/producto-uniqueness.validator.ts';
 import { UsuarioValidator } from 'src/modules/common/utils/validation/usuario-validator';
 import { ProductoDeletePolicy } from '../policies/producto-delete.policy';
+import { ProductoDenominacionService } from '../../domain/services/producto-denominacion.service';
+import { SugerirDenominacionDto } from '../../dto/sugerir-denominacion.dto';
 @Injectable()
 export class ProductoService {
   private readonly logger = new Logger(ProductoService.name);
@@ -43,6 +45,7 @@ export class ProductoService {
     //  Domain Services
     private readonly intrinsicValidationService: ProductoIntrinsicValidationService,
     private readonly validationService: ProductoValidationService,
+    private readonly denominacionService: ProductoDenominacionService,
 
     // Infrastructure Validators
     private readonly relatedEntitiesValidator: ProductoRelatedEntitiesValidator,
@@ -101,6 +104,24 @@ export class ProductoService {
       entity.denominacion,
       'editada',
     );
+  }
+
+  /**
+   * CR-005: Genera una denominación sugerida a partir de Marca + Línea + Presentación.
+   * No persiste nada; el frontend decide si la usa o el usuario la sobreescribe.
+   */
+  async sugerirDenominacion(dto: SugerirDenominacionDto): Promise<{ denominacion: string }> {
+    const marca = await this.marcaService.findEntityById(dto.marcaId);
+    const linea = await this.lineaService.findEntityById(dto.lineaId);
+
+    const denominacion = this.denominacionService.generarDenominacionSugerida(
+      marca.denominacion,
+      linea.denominacion,
+      dto.unidadPresentacion,
+      dto.cantidadPresentacion,
+    );
+
+    return { denominacion };
   }
 
   async findByRapido(
@@ -320,6 +341,7 @@ export class ProductoService {
       marcaId: dto.marcaId,
       lineaId: dto.lineaId,
       alicuotaIva: dto.alicuotaIva,
+      cantidadPresentacion: dto.cantidadPresentacion,
     });
 
     // Validar unicidad (Infrastructure - DB)
@@ -382,6 +404,7 @@ export class ProductoService {
       marcaId: dto.marcaId ?? productoActual.marcaId,
       lineaId: dto.lineaId ?? productoActual.lineaId,
       alicuotaIva: dto.alicuotaIva ?? productoActual.alicuotaIva,
+      cantidadPresentacion: dto.cantidadPresentacion ?? productoActual.cantidadPresentacion,
 
     });
 
