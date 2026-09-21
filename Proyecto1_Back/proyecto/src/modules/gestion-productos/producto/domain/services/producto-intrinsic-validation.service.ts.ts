@@ -11,18 +11,13 @@ export class ProductoIntrinsicValidationService {
     marcaId: number;
     lineaId: number;
     alicuotaIva?: number;
-    precioMayorista?: number;
-    precioCliente?: number;
-    precioOcasional?: number;
+    costo?: number;
+    precio?: number;
     cantidadPresentacion?: number;
   }): void {
     this.validarDenominacion(datos.denominacion);
     this.validarIds(datos.marcaId, datos.lineaId);
-    this.validarPrecios(
-      datos.precioMayorista,
-      datos.precioCliente,
-      datos.precioOcasional,
-    );
+    this.validarPrecio(datos.costo, datos.precio);
     
     if (datos.alicuotaIva !== undefined) {
       this.validarAlicuotaIva(datos.alicuotaIva);
@@ -55,51 +50,23 @@ export class ProductoIntrinsicValidationService {
 
   }
 
-  /**
-   * Valida la jerarquía de precios: Mayorista <= Cliente <= Ocasional
-   */
-  private validarPrecios(
-    precioMayorista?: number,
-    precioCliente?: number,
-    precioOcasional?: number,
-  ): void {
-    if (precioMayorista !== undefined && precioMayorista < 0) {
+  private validarPrecio(costo?: number, precio?: number): void {
+    if (costo !== undefined && costo < 0) {
+      throw new BadRequestException('El costo no puede ser negativo');
+    }
+
+    if (precio !== undefined && precio < 0) {
+      throw new BadRequestException('El precio no puede ser negativo');
+    }
+
+    if (
+      costo !== undefined &&
+      precio !== undefined &&
+      precio < costo
+    ) {
       throw new BadRequestException(
-        'El precio mayorista no puede ser negativo',
+        'El precio debe ser mayor o igual que el costo',
       );
-    }
-    if (precioCliente !== undefined && precioCliente < 0) {
-      throw new BadRequestException('El precio cliente no puede ser negativo');
-    }
-    if (precioOcasional !== undefined && precioOcasional < 0) {
-      throw new BadRequestException(
-        'El precio ocasional no puede ser negativo',
-      );
-    }
-
-    // Validar jerarquía: Mayorista <= Cliente <= Ocasional
-    if (precioMayorista && precioCliente) {
-      if (precioMayorista > precioCliente) {
-        throw new BadRequestException(
-          'El precio Mayorista no puede superar el precio Cliente',
-        );
-      }
-    }
-
-    if (precioCliente && precioOcasional) {
-      if (precioCliente > precioOcasional) {
-        throw new BadRequestException(
-          'El precio Cliente no puede superar el precio Ocasional',
-        );
-      }
-    }
-
-    if (precioMayorista && precioOcasional) {
-      if (precioMayorista > precioOcasional) {
-        throw new BadRequestException(
-          'El precio Mayorista no puede superar el precio Ocasional',
-        );
-      }
     }
   }
 
@@ -110,8 +77,7 @@ export class ProductoIntrinsicValidationService {
       );
     }
   }
-
-  private validarPresentacion(cantidadPresentacion?: number): void {
+private validarPresentacion(cantidadPresentacion?: number): void {
     if (cantidadPresentacion !== undefined && cantidadPresentacion <= 0) {
       throw new BadRequestException(
         'La cantidad de presentación debe ser mayor a 0',

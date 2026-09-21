@@ -1,6 +1,7 @@
 import {
   forwardRef,
   Inject,
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -289,26 +290,32 @@ export class ProductoService {
     uow: IUnitOfWork,
     productoId: number,
     cantidad: number,
-    origen?: string,
+    motivo: string,
   ): Promise<number> {
-    return this.ajustarStockInterno(uow, productoId, cantidad, origen);
+    return this.ajustarStockInterno(uow, productoId, cantidad, motivo);
   }
 
   async decrementarStock(
     uow: IUnitOfWork,
     productoId: number,
     cantidad: number,
-    origen?: string,
+    motivo: string,
   ): Promise<number> {
-    return this.ajustarStockInterno(uow, productoId, -cantidad, origen);
+    return this.ajustarStockInterno(uow, productoId, -cantidad, motivo);
   }
 
   private async ajustarStockInterno(
     uow: IUnitOfWork,
     productoId: number,
     delta: number,
-    origen?: string,
+    motivo: string,
   ): Promise<number> {
+    if (typeof motivo !== 'string' || motivo.trim().length === 0) {
+      throw new BadRequestException(
+        'El motivo del ajuste de stock es obligatorio.',
+      );
+    }
+
     const producto = await this.repository.findOne(productoId);
     if (!producto) {
       throw new Error(`Producto con ID ${productoId} no encontrado`);
@@ -317,14 +324,15 @@ export class ProductoService {
     const stockActual = producto.stock ?? 0;
     const nuevoStock = stockActual + delta;
 
-    // Política opcional
-    // if (nuevoStock < 0) throw ...
+    if (nuevoStock < 0) {
+      throw new BadRequestException('El stock no puede quedar negativo.');
+    }
 
     producto.stock = nuevoStock;
     await this.repository.updateEntity(uow, producto);
 
     this.logger.log(
-      `[StockService] ${origen ?? 'Desconocido'} → ${stockActual} → ${nuevoStock}`,
+      `[StockService] ${motivo} → ${stockActual} → ${nuevoStock}`,
     );
 
     return nuevoStock;
@@ -341,6 +349,8 @@ export class ProductoService {
       marcaId: dto.marcaId,
       lineaId: dto.lineaId,
       alicuotaIva: dto.alicuotaIva,
+      costo: dto.costo,
+      precio: dto.precio,
       cantidadPresentacion: dto.cantidadPresentacion,
     });
 
@@ -404,8 +414,9 @@ export class ProductoService {
       marcaId: dto.marcaId ?? productoActual.marcaId,
       lineaId: dto.lineaId ?? productoActual.lineaId,
       alicuotaIva: dto.alicuotaIva ?? productoActual.alicuotaIva,
+      costo: dto.costo ?? productoActual.costo,
+      precio: dto.precio ?? productoActual.precio,
       cantidadPresentacion: dto.cantidadPresentacion ?? productoActual.cantidadPresentacion,
-
     });
 
     // Validar unicidad (excluyendo el ID actual)
