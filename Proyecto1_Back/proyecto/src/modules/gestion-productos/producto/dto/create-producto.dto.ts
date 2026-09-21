@@ -81,11 +81,6 @@ export class CreateProductoDto {
   @IsEnum(UnidadPresentacion, {
     message: 'unidadPresentacion debe ser un valor válido del catálogo.',
   })
-  @Transform(({ value }) =>
-    typeof value === 'string'
-      ? UnidadPresentacion[value.toUpperCase() as keyof typeof UnidadPresentacion]
-      : value,
-  )
   unidadPresentacion: UnidadPresentacion;
 
   @IsOptional()
