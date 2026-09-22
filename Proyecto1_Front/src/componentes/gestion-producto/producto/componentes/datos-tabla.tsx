@@ -11,6 +11,7 @@ interface Props {
   onEditar: (id: number) => void;
   onInfo: (id: number) => void;
   onDelete: (id: number) => void;
+  onHistorial: (id: number) => void;
   
 }
 
@@ -21,7 +22,7 @@ export function DatosTabla({
   onEditar,
   onInfo,
   onDelete,
-  ...actions
+  onHistorial,
 }: Props) {
   return (
     <div className="hidden lg:block overflow-x-auto">
@@ -36,6 +37,7 @@ export function DatosTabla({
                   onEditar={onEditar}
                   onInfo={onInfo}
                   onDelete={onDelete}
+                  onHistorial={onHistorial}
                 />
               )
             : undefined

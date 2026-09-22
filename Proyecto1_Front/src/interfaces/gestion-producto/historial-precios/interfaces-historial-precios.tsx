@@ -38,3 +38,18 @@ export interface ConsultarHistorialPrecios {
   precioOferta: number;
   precioOfertaNuevo: number;
 }
+
+export interface HistorialPrecioCr007 {
+  id: number;
+  productoId: number;
+  precioAnterior: number;
+  precioNuevo: number;
+  fecha: string;
+  motivo: string;
+  usuarioId?: number | null;
+}
+
+export interface HistorialPrecioResponse {
+  data: HistorialPrecioCr007[];
+  total: number;
+}

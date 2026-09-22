@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Transactional } from 'src/modules/common/decorators/transactional.decoratos';
 import { DatabaseConnectionException } from 'src/modules/common/exceptions/database-connection.exception';
@@ -9,6 +15,7 @@ import { Marca } from 'src/modules/gestion-productos/marca/domain/entities/marca
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { Repository, IsNull, DataSource } from 'typeorm';
 import { Producto } from '../../domain/entities/producto.entity';
+import { HistorialPrecio } from '../../domain/entities/historial-precio.entity';
 import { IProductoRepository } from '../../domain/interfaces/producto.repository-interface';
 import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { UpdatePrecioDto } from '../../dto/update-precio.dto';
@@ -170,10 +177,25 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       if (!entity) {
         throw new NotFoundException(`EL prodcuto con ID ${id} no encontrada`);
       }
-      const {
+      const precioAnterior = Number(entity.precio ?? 0);
+      const precioCambia = data.precio !== undefined;
+      const precioNuevo = precioCambia ? Number(data.precio) : precioAnterior;
 
-        ...dataSinItems
-      } = data;
+      if (precioCambia && (!Number.isFinite(precioNuevo) || precioNuevo <= 0)) {
+        throw new BadRequestException('El precio debe ser mayor que cero.');
+      }
+
+      if (
+        precioCambia &&
+        precioNuevo !== precioAnterior &&
+        (!data.motivoPrecio || data.motivoPrecio.trim().length === 0)
+      ) {
+        throw new BadRequestException(
+          'El motivo del cambio de precio es obligatorio.',
+        );
+      }
+
+      const { motivoPrecio, ...dataSinItems } = data;
 
       Object.assign(entity, dataSinItems, {
         linea,
@@ -183,11 +205,28 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       entity.usuarioUpdated = usuario; 
       const entityActualizada = await repo.save(entity);
 
+      if (precioCambia && precioNuevo !== precioAnterior) {
+        const historialRepository = this.uow.getRepository(HistorialPrecio);
+        await historialRepository.save(
+          historialRepository.create({
+            productoId: entity.id,
+            producto: entity,
+            precioAnterior,
+            precioNuevo,
+            motivo: motivoPrecio?.trim() ?? '',
+            usuarioId: usuario.id,
+            usuario,
+          }),
+        );
+      }
 
       return entityActualizada;
     } catch (error) {
       this.logger.warn(`Items para eliminar: )}`);
 
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
       throw new DatabaseConnectionException(error);
     }
   }
@@ -382,6 +421,23 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
 
     await repo.save(entity);
 
+  }
+
+  async findHistorialPrecios(
+    productoId: number,
+    skip: number,
+    take: number,
+  ): Promise<{ data: HistorialPrecio[]; total: number }> {
+    const [data, total] = await this.dataSource
+      .getRepository(HistorialPrecio)
+      .findAndCount({
+        where: { productoId },
+        order: { fecha: 'DESC' },
+        skip,
+        take,
+      });
+
+    return { data, total };
   }
 
   async findByDenominacion(denominacion: string): Promise<Producto | null> {

@@ -22,7 +22,7 @@ services:
     container_name: proyecto-phpmyadmin
     restart: always
     depends_on:
-      - mysql
+      - mysql 
     ports:
       - "8081:80"
     environment:

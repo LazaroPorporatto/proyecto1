@@ -7,6 +7,7 @@ import {
   ManyToOne,
   Index,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Linea } from '../../../linea/domain/entities/linea.entity';
 import { Marca } from '../../../marca/domain/entities/marca.entity';
@@ -18,6 +19,7 @@ import { MonetarioColumn } from 'src/modules/common/decorators/monetario-column.
 import { CantidadColumn } from 'src/modules/common/decorators/cantidad-column.decorator';
 import { PorcentajeColumn } from 'src/modules/common/decorators/porcentaje-column.decorator';
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
+import { HistorialPrecio } from './historial-precio.entity';
 
 @Entity('producto')
 export class Producto {
@@ -172,4 +174,7 @@ export class Producto {
 
   @Column({ type: 'text', nullable: true })
   codigoReferencia?: string | null;
+
+  @OneToMany(() => HistorialPrecio, (historial) => historial.producto)
+  historialPrecios: HistorialPrecio[];
 }

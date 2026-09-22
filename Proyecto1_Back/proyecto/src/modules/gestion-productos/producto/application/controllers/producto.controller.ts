@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Put,
   Query,
+  DefaultValuePipe,
   UsePipes,
   UseGuards,
 } from '@nestjs/common';
@@ -145,6 +146,16 @@ export class ProductoController {
   @Roles('Root', 'Administrador', 'Empleado')
   async geLineaDelProducto(@Param('id', ParseIntPipe) id: number) {
     return this.service.buscarLineaDesdeProducto(id);
+  }
+
+  @Get(':id/historial-precios')
+  @Roles('Root', 'Administrador', 'Empleado', 'Vendedor')
+  async historialPrecios(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+  ) {
+    return this.service.obtenerHistorialPrecios(id, skip, take);
   }
 
   @Get(':id')

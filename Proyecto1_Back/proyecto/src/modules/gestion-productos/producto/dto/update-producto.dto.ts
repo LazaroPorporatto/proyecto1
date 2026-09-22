@@ -6,6 +6,9 @@ import {
   IsString,
   MaxLength,
   Matches,
+  IsNumber,
+  IsOptional,
+  IsPositive,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -25,4 +28,16 @@ export class UpdateProductoDto extends PartialType(CreateProductoDto) {
   usuarioUpdatedId: number;
 
   updatedAt: Date;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'El precio debe ser numerico.' })
+  @IsPositive({ message: 'El precio debe ser mayor que cero.' })
+  precio?: number;
+
+  @IsOptional()
+  @IsString({ message: 'El motivo del precio debe ser texto.' })
+  @MaxLength(500, {
+    message: 'El motivo del precio no puede superar 500 caracteres.',
+  })
+  motivoPrecio?: string;
 }

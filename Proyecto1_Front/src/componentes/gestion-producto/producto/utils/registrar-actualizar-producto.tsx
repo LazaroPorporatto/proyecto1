@@ -190,8 +190,21 @@ export default function RegistrarActualizarProductoForm({
       }
 
       if (producto) {
+        const precioInicial = Number(producto.precio ?? 0);
+        const precioNuevo = Number(formData.precio ?? 0);
+        const precioCambia = precioInicial !== precioNuevo;
+
+        if (precioCambia && !formData.motivoPrecio?.trim()) {
+          setError("root", {
+            type: "manual",
+            message: "Debe indicar el motivo del cambio de precio.",
+          });
+          return;
+        }
+
         const payload = {
           ...formData,
+          motivoPrecio: precioCambia ? formData.motivoPrecio?.trim() : undefined,
           usuarioUpdatedId: usuarioId,
         };
 
@@ -379,6 +392,13 @@ export default function RegistrarActualizarProductoForm({
                     maxDigits={9}
                     disabled={producto && producto.sistema > 0 ? true : false}
                   />
+                  {producto && (
+                    <FormInput
+                      name="motivoPrecio"
+                      label="Motivo del cambio de precio"
+                      placeholder="Indica por qué cambia el precio"
+                    />
+                  )}
                   <PorcentajeInput
                     name="porcentaje"
                     label="Porcentaje"
