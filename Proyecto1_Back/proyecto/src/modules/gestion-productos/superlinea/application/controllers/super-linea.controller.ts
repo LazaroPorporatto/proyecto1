@@ -57,6 +57,19 @@ export class SuperLineaController {
     );
   }
 
+  @Get(':id/audit')
+  @ApiOkResponse({
+    description: 'Informacion de auditoria',
+    type: AuditoriaDto,
+  })
+  @Roles('Root', 'Administrador', 'Empleado')
+  async findByIdConAuditoria(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<AuditoriaDto> {
+    this.logger.log(`Buscando auditoría de ${this.ENTITY_NAME} con ID: ${id}`);
+    return this.service.findByIdConAuditoria(+id);
+  }
+
   @Get(':id')
   @ApiOkResponse({ type: SuperLineaDto })
   @Roles('Root', 'Administrador', 'Empleado')

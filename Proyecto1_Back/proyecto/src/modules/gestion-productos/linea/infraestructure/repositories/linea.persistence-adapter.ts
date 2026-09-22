@@ -37,7 +37,7 @@ export class LineaPersistenceAdapter
 
   protected baseQuery(incluirEliminados = false) {
     const query = super.baseQuery(incluirEliminados);
-    query.leftJoinAndSelect('linea.superLinea', 'superLinea');
+    query.innerJoinAndSelect('linea.superLinea', 'superLinea');
     return query;
   }
 

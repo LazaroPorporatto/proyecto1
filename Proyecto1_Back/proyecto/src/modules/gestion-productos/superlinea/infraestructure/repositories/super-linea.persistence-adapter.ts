@@ -11,6 +11,7 @@ import { IUnitOfWork } from 'src/modules/common/unit-of-work/iunit-of-work.';
 import { Transactional } from 'src/modules/common/decorators/transactional.decoratos';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { AuditoriaDto } from 'src/modules/gestion-sistema/auditoria/dto/auditoria.dto';
+import { FechaUtils } from 'src/modules/common/utils/date/fecha-utils';
 import { QueryBuilderHelper } from 'src/modules/common/query-builders/query-builder-helpers';
 import { BasePersistenceAdapter } from 'src/modules/common/persistence/base-persistence.adapter';
 import { handleDatabaseError } from 'src/modules/common/query-builders/database-error.helper';
@@ -212,22 +213,63 @@ export class SuperLineaPersistenceAdapter
   }
 
   async findByIdConAuditoria(id: number): Promise<AuditoriaDto | null> {
-    const entity = await this.repository
-      .createQueryBuilder('super_linea')
-      .where('super_linea.id = :id', { id })
-      .getOne();
+    try {
+      const raw = await this.repository
+        .createQueryBuilder('super_linea')
+        .leftJoin(
+          'usuario',
+          'usuarioCreated',
+          'usuarioCreated.id = super_linea.usuarioCreatedId',
+        )
+        .leftJoin(
+          'usuario',
+          'usuarioUpdated',
+          'usuarioUpdated.id = super_linea.usuarioUpdatedId',
+        )
+        .leftJoin(
+          'usuario',
+          'usuarioDeleted',
+          'usuarioDeleted.id = super_linea.usuarioDeletedId',
+        )
+        .addSelect([
+          'super_linea.id as super_linea_id',
+          'super_linea.denominacion as super_linea_denominacion',
+          'super_linea.createdAt as super_linea_createdAt',
+          'super_linea.updatedAt as super_linea_updatedAt',
+          'super_linea.deletedAt as super_linea_deletedAt',
+          'usuarioCreated.denominacion as usuarioCreated_nombre',
+          'usuarioUpdated.denominacion as usuarioUpdated_nombre',
+          'usuarioDeleted.denominacion as usuarioDeleted_nombre',
+        ])
+        .where('super_linea.id = :id', { id })
+        .getRawOne();
 
-    if (!entity) return null;
+      if (!raw) return null;
 
-    return {
-      id: entity.id,
-      usuarioCreatedId: entity.usuarioCreatedId,
-      usuarioUpdatedId: entity.usuarioUpdatedId,
-      usuarioDeletedId: entity.usuarioDeletedId,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
-    } as any;
+      return {
+        id: raw.super_linea_id ?? 0,
+        detalle: raw.super_linea_denominacion
+          ? `SuperLínea ${raw.super_linea_denominacion}`
+          : 'SuperLínea (sin denominación)',
+        createdAt: raw.super_linea_createdAt
+          ? FechaUtils.formatFechaHora(raw.super_linea_createdAt)
+          : '',
+        updatedAt: raw.super_linea_updatedAt
+          ? FechaUtils.formatFechaHora(raw.super_linea_updatedAt)
+          : '',
+        deletedAt: raw.super_linea_deletedAt
+          ? FechaUtils.formatFechaHora(raw.super_linea_deletedAt)
+          : '',
+        usuarioCreated: raw.usuarioCreated_nombre ?? '',
+        usuarioUpdated: raw.usuarioUpdated_nombre ?? '',
+        usuarioDeleted: raw.usuarioDeleted_nombre ?? '',
+      };
+    } catch (error) {
+      this.logger.error(`Error en findByIdConAuditoria: ${error}`);
+      throw new DatabaseConnectionException(
+        'Error al conectar con la base de datos.',
+      );
+    }
   }
 
   async remove(entity: SuperLinea, usuario: Usuario): Promise<SuperLinea> {

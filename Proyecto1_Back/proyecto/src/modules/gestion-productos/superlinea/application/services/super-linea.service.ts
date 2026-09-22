@@ -149,4 +149,14 @@ export class SuperLineaService {
   async findAllListado(): Promise<SuperLinea[]> {
     return this.repository.findAllListado();
   }
+
+  async findByIdConAuditoria(id: number) {
+    const data = await this.repository.findByIdConAuditoria(id);
+    if (!data) {
+      throw new NotFoundException(
+        `Auditoría de ${this.ENTITY_NAME} con ID ${id} no encontrada.`,
+      );
+    }
+    return data;
+  }
 }
