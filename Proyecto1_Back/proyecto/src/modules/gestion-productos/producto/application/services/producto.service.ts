@@ -21,6 +21,7 @@ import { UpdateProductoDto } from '../../dto/update-producto.dto';
 import { ProductoMapper } from '../../mappers/producto.mapper';
 import { LineaService } from 'src/modules/gestion-productos/linea/application/services/linea.service';
 import { MarcaService } from 'src/modules/gestion-productos/marca/application/services/marca.service';
+import { PresentacionService } from 'src/modules/gestion-productos/presentacion/application/services/presentacion.service';
 import { ProductoIntrinsicValidationService } from '../../domain/services/producto-intrinsic-validation.service.ts';
 import { ProductoValidationService } from '../../domain/services/producto-validation.service.ts';
 import { ProductoRelatedEntitiesValidator } from '../../infraestructure/validators/producto-related-entities.validator.ts';
@@ -39,6 +40,8 @@ export class ProductoService {
 
     @Inject(forwardRef(() => MarcaService))
     private readonly marcaService: MarcaService,
+    @Inject(forwardRef(() => PresentacionService))
+    private readonly presentacionService: PresentacionService,
     private readonly proveedorService: ProveedorService,
     private readonly usuarioService: UsuarioService,
 
@@ -64,7 +67,7 @@ export class ProductoService {
     );
 
     // Orquestar todas las validaciones
-    const { marca, linea, usuario } =
+    const { marca, linea, presentacion, usuario } =
       await this.validarYPrepararCreacion(dto);
 
 
@@ -73,7 +76,7 @@ export class ProductoService {
       dto,
       linea,
       marca,
-
+      presentacion,
       usuario,
     );
 
@@ -87,7 +90,7 @@ export class ProductoService {
   async update(id: number, dto: UpdateProductoDto) {
     this.logger.log(`Actualizandox  ${this.ENTITY_NAME} con ID: ${id}`);
 
-    const { marca, linea, usuario } =
+    const { marca, linea, presentacion, usuario } =
       await this.validarYPrepararActualizacion(id, dto);
 
     const entity = await this.repository.update(
@@ -95,7 +98,7 @@ export class ProductoService {
       dto,
       linea,
       marca,
-
+      presentacion,
       usuario,
     );
 
@@ -250,6 +253,10 @@ export class ProductoService {
     return this.marcaService.findAllFor(denominacion);
   }
 
+  async findAllForPresentaciones(denominacion: string) {
+    return this.presentacionService.findAllFor(denominacion);
+  }
+
   async findByDenominacionCodigoProveedorFiltered(
     denominacion: string,
     skip = 0,
@@ -354,11 +361,11 @@ export class ProductoService {
       );
     }
     // 3 Validar entidades relacionadas existen (Infrastructure - DB)
-    const { marca, linea, } =
+    const { marca, linea, presentacion } =
       await this.relatedEntitiesValidator.validarYObtenerEntidadesRelacionadas(
         dto.marcaId,
         dto.lineaId,
-
+        dto.presentacionId ?? 0,
       );
 
     //  Validar reglas de negocio sobre entidades (Domain)
@@ -374,7 +381,7 @@ export class ProductoService {
       dto.usuarioCreatedId,
     );
 
-    return { marca, linea, usuario };
+    return { marca, linea, presentacion, usuario };
   }
   /**
    * Orquesta todas las validaciones necesarias para actualizar un producto
@@ -417,11 +424,11 @@ export class ProductoService {
     }
 
     // Validar entidades relacionadas
-    const { marca, linea, } =
+    const { marca, linea, presentacion } =
       await this.relatedEntitiesValidator.validarYObtenerEntidadesRelacionadas(
         dto.marcaId ?? productoActual.marcaId,
         dto.lineaId ?? productoActual.lineaId,
-
+        dto.presentacionId ?? productoActual.presentacionId ?? 0,
       );
 
     //  Validar reglas de negocio
@@ -436,7 +443,7 @@ export class ProductoService {
       dto.usuarioUpdatedId,
     );
 
-    return { marca, linea, usuario };
+    return { marca, linea, presentacion, usuario };
   }
 
 

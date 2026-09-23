@@ -4,6 +4,5 @@ export enum UnidadPresentacion {
   MILILITRO = 'ML',
   KILOGRAMO = 'KG',
   GRAMO = 'GR',
-  PACK = 'PACK',
   CAJA = 'CAJA',
 }

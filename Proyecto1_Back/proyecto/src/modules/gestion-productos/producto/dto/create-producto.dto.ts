@@ -102,6 +102,11 @@ export class CreateProductoDto {
 
 
   @IsOptional()
+  @IsInt({ message: 'La presentación debe ser un número entero.' })
+  presentacionId?: number;
+
+
+  @IsOptional()
   @IsNumber()
   porcentaje?: number;
 
