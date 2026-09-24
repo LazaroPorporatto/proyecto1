@@ -10,7 +10,6 @@ export enum UnidadPresentacion {
   MILILITRO = 'ML',
   KILOGRAMO = 'KG',
   GRAMO = 'GR',
-  PACK = 'PACK',
   CAJA = 'CAJA',
 }
 
@@ -55,9 +54,9 @@ export interface Producto {
   precioMayoristaConIva: number;
   precioClienteConIva: number;
   precioOfertaConIva: number;
-  presentacion: SelectPresentacion;
   itemsProveedor?: ItemProveedor[] | null;
  */
+  presentacion: SelectPresentacion;
   stockMinimo: number;
   utilizaStockMinimo: boolean;
   unidadPresentacion: UnidadPresentacion;
