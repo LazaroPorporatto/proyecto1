@@ -7,6 +7,7 @@ import {
   ManyToOne,
   Index,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Linea } from '../../../linea/domain/entities/linea.entity';
 import { Marca } from '../../../marca/domain/entities/marca.entity';
@@ -25,6 +26,7 @@ import { redondear } from 'src/modules/common/utils/number/redondeo';
 import { DomainEvent } from '../events/domain-event.interface';
 import { StockActualizadoEvent } from '../events/stock-actualizado.event';
 import { StockBajoEvent } from '../events/stock-bajo.event';
+import { HistorialPrecio } from './historial-precio.entity';
 
 @Entity('producto')
 export class Producto {
@@ -462,4 +464,7 @@ export class Producto {
   sacarEventos(): DomainEvent[] {
     return Producto.sacarEventos(this);
   }
+
+  @OneToMany(() => HistorialPrecio, (historial) => historial.producto)
+  historialPrecios: HistorialPrecio[];
 }

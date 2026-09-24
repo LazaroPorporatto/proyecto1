@@ -113,21 +113,18 @@ export function DatosCard({
         </ActionButton>
       )}
 
-      {/* Acciones por el momento las ocultamos del celular */}
-      {/* <div className="bg-gray-50 px-2 py-2 border-t border-gray-200">
+      <div className="bg-gray-50 px-2 py-2 border-t border-gray-200">
       <div className="flex justify-center gap-1">
         <ProductoActions
           producto={producto}
           onEditar={onEditar}
           onInfo={onInfo}
           onDelete={onDelete}
-          onMovimientos={onMovimientos}
-          onCambioPrecios={onCambioPrecios}
           onHistorial={onHistorial}
           compact
         />
       </div> 
-  </div>*/}
+      </div>
     </div>
   );
 }

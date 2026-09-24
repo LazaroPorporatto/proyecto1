@@ -10,6 +10,7 @@ import { DatabaseConnectionException } from 'src/modules/common/exceptions/datab
 import { IUnitOfWork } from 'src/modules/common/unit-of-work/iunit-of-work.';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { UpdatePrecioDto } from '../../dto/update-precio.dto';
+import { HistorialPrecio } from '../../domain/entities/historial-precio.entity';
 
 @Injectable()
 export class ProductoRepository implements IProductoRepository {
@@ -136,6 +137,18 @@ export class ProductoRepository implements IProductoRepository {
 
   async actualizarPrecio(id: number, dto: UpdatePrecioDto, usuario: Usuario) {
     return this.persistenceService.actualizarPrecio(id, dto, usuario);
+  }
+
+  async findHistorialPrecios(
+    productoId: number,
+    skip: number,
+    take: number,
+  ): Promise<{ data: HistorialPrecio[]; total: number }> {
+    return this.persistenceService.findHistorialPrecios(
+      productoId,
+      skip,
+      take,
+    );
   }
 
 

@@ -16,6 +16,7 @@ export interface FormValues {
   stock?: number | null;
   costo?: number | null;
   precio?: number | null;
+  motivoPrecio?: string;
   porcentaje?: number | null;
   /* costoEnDolar?: boolean | null;
   costoDolar?: number | null;
@@ -48,6 +49,18 @@ export interface ItemsProveedorEnPayload {
   usuarioCreatedId: number;
 }
 
+export const validarMotivoCambioPrecio = (
+  precioInicial: number,
+  precioNuevo: number,
+  motivo?: string,
+): string | null => {
+  if (precioInicial !== precioNuevo && !motivo?.trim()) {
+    return "Debe indicar el motivo del cambio de precio.";
+  }
+
+  return null;
+};
+
 //===================== schema de validacion ============================================//
 
 export const schema = (utilizaStockMinimo: boolean, utilizaPack?: boolean, usaOferta?: boolean) =>
@@ -70,6 +83,7 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack?: boolean, usaOf
       if (value==null || costo == null ) return true;
       return value>= costo;
     }),
+    motivoPrecio: yup.string().max(500, "El motivo no puede superar 500 caracteres.").optional(),
     porcentaje: yup.number().typeError("El porcentaje debe ser un valor númerico").min(0,"El porcentaje mínimo debe ser mayor o igual a 0").max(999, "El porcentaje máximo permitido es de 999").optional().nullable(),
     /* costoEnDolar: yup.boolean().optional().nullable(),
     costoDolar: yup.number().optional().nullable(),

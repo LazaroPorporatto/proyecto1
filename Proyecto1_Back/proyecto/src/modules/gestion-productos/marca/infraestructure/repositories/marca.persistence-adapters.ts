@@ -33,7 +33,7 @@ export class MarcaPersistenceAdapter
     super(repository);
   }
 
-  @Transactional() //patron transaccional
+@Transactional() //patron transaccional
   async create(data: CreateMarcaDto): Promise<Marca> {
     const repo = this.uow.getRepository(Marca);
     const nueva = repo.create(data);

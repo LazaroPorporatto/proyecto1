@@ -5,6 +5,7 @@ import { createCrudService } from "../../../../utils/crudFactory";
 import { FormValues } from "../interfaces/interfaces-validaciones-item-prod-alternativo";
 import ApiService from "../../../../utils/apiService";
 import { UnidadPresentacion } from "../../../../interfaces/gestion-producto/producto/interfaces-producto";
+import { HistorialPrecioResponse } from "../../../../interfaces/gestion-producto/historial-precios/interfaces-historial-precios";
 
 
 const apiUrl = axiosConfig.apiUrl;
@@ -43,6 +44,14 @@ const ProductoService = {
       console.error("Error al actualizar producto:", error);
       throw error;
     }
+  },
+
+  obtenerHistorialPrecios: async (
+    id: number,
+    skip = 0,
+    take = 10,
+  ): Promise<HistorialPrecioResponse> => {
+    return ApiService.get(`/producto/${id}/historial-precios`, { skip, take });
   },
 
   calcularPreciosConPorcentaje: async (

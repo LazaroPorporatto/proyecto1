@@ -22,7 +22,13 @@ import RegistrarActualizarMarcaForm from "../../marca/utils/registrar-actualizar
 import { ItemProveedor } from "../../../../interfaces/gestion-producto/producto/interfaces-item-proveedor";
 import { SelectSublinea } from "../../../../interfaces/gestion-producto/sublinea/interfaces-sublinea";
 import { ItemsProveedorEnPayload } from "../interfaces/interfaces-validaciones-item-proveedor";
-import { FormValues, schema, transformData, transformarItemsProdAlternativo } from "../interfaces/interfaces-validaciones-producto";
+import {
+  FormValues,
+  schema,
+  transformData,
+  transformarItemsProdAlternativo,
+  validarMotivoCambioPrecio,
+} from "../interfaces/interfaces-validaciones-producto";
 import LineasSelector from "../componentes/configuracion/lineas-selector";
 import EncabezadoFormularios from "../../../ui/encabezadoFormularios";
 import MarcasSelector from "../componentes/configuracion/marcas-selector";
@@ -236,8 +242,26 @@ export default function RegistrarActualizarProductoForm({
       }
 
       if (producto) {
+        const precioInicial = Number(producto.precio ?? 0);
+        const precioNuevo = Number(formData.precio ?? 0);
+        const precioCambia = precioInicial !== precioNuevo;
+        const errorMotivo = validarMotivoCambioPrecio(
+          precioInicial,
+          precioNuevo,
+          formData.motivoPrecio,
+        );
+
+        if (errorMotivo) {
+          setError("root", {
+            type: "manual",
+            message: errorMotivo,
+          });
+          return;
+        }
+
         const payload = {
           ...formData,
+          motivoPrecio: precioCambia ? formData.motivoPrecio?.trim() : undefined,
           usuarioUpdatedId: usuarioId,
         };
 
@@ -404,6 +428,13 @@ export default function RegistrarActualizarProductoForm({
                     maxDigits={9}
                     disabled={producto && producto.sistema > 0 ? true : false}
                   />
+                  {producto && (
+                    <FormInput
+                      name="motivoPrecio"
+                      label="Motivo del cambio de precio"
+                      placeholder="Indica por qué cambia el precio"
+                    />
+                  )}
                   <PorcentajeInput
                     name="porcentaje"
                     label="Porcentaje"

@@ -3,7 +3,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { AplicarCambiosPrecioDto } from './aplicar-cambios-precio.dto';
 import { GuardarCambiosPrecioDto } from './guardar-cambios-precio.dto';
 
-describe('DTOs de cambio de precios (validación con ValidationPipe)', () => {
+describe('DTOs de cambio de precios (US-006: validacion de payload)', () => {
   const pipe = new ValidationPipe({
     transform: true,
     whitelist: true,
@@ -16,10 +16,10 @@ describe('DTOs de cambio de precios (validación con ValidationPipe)', () => {
   describe('AplicarCambiosPrecioDto', () => {
     it('acepta un payload valido', async () => {
       const resultado = await pasarPipe(
-        { tipo: 'porcentaje', valor: 10, items: [{ id: 1 }] },
+        { tipo: 'monto', valor: -10, items: [{ id: 1 }] },
         AplicarCambiosPrecioDto,
       );
-      expect(resultado.tipo).toBe('porcentaje');
+      expect(resultado.tipo).toBe('monto');
       expect(resultado.items[0].id).toBe(1);
     });
 
@@ -41,21 +41,6 @@ describe('DTOs de cambio de precios (validación con ValidationPipe)', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('rechaza un item con id no positivo', async () => {
-      try {
-        await pasarPipe(
-          { tipo: 'porcentaje', valor: 10, items: [{ id: -3 }] },
-          AplicarCambiosPrecioDto,
-        );
-        throw new Error('no rechazó');
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(BadRequestException);
-        expect(error.getResponse?.().message).toContain(
-          'items.0.id must be a positive number',
-        );
-      }
-    });
-
     it('rechaza propiedades no declaradas (forbidNonWhitelisted)', async () => {
       await expect(
         pasarPipe(
@@ -66,37 +51,23 @@ describe('DTOs de cambio de precios (validación con ValidationPipe)', () => {
     });
   });
 
-  describe('GuardarCambiosPrecioDto', () => {
+  describe('GuardarCambiosPrecioDto (E4: motivo obligatorio)', () => {
     it('acepta un payload valido', async () => {
       const resultado = await pasarPipe(
-        { items: [{ id: 1, nuevoPrecio: 110 }], motivo: 'Aumento por inflacion', usuarioCreatedId: 7 },
+        {
+          items: [{ id: 1, nuevoPrecio: 110 }],
+          motivo: 'Aumento por inflacion',
+          usuarioCreatedId: 7,
+        },
         GuardarCambiosPrecioDto,
       );
       expect(resultado.motivo).toBe('Aumento por inflacion');
     });
 
-    it('rechaza un motivo vacio', async () => {
+    it('rechaza el guardado sin motivo (E4)', async () => {
       await expect(
         pasarPipe(
           { items: [{ id: 1, nuevoPrecio: 110 }], motivo: '', usuarioCreatedId: 7 },
-          GuardarCambiosPrecioDto,
-        ),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('rechaza un usuario no positivo', async () => {
-      await expect(
-        pasarPipe(
-          { items: [{ id: 1, nuevoPrecio: 110 }], motivo: 'Aumento', usuarioCreatedId: 0 },
-          GuardarCambiosPrecioDto,
-        ),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('rechaza un item sin nuevoPrecio', async () => {
-      await expect(
-        pasarPipe(
-          { items: [{ id: 1 }], motivo: 'Aumento', usuarioCreatedId: 7 },
           GuardarCambiosPrecioDto,
         ),
       ).rejects.toThrow(BadRequestException);

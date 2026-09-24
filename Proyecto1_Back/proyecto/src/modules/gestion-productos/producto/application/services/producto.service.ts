@@ -20,6 +20,7 @@ import { IProductoRepository } from '../../domain/interfaces/producto.repository
 import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { GetProductoDto } from '../../dto/get-producto.dto';
 import { UpdateProductoDto } from '../../dto/update-producto.dto';
+import { HistorialPrecioDto } from '../../dto/historial-precio.dto';
 import { ProductoMapper } from '../../mappers/producto.mapper';
 import { LineaService } from 'src/modules/gestion-productos/linea/application/services/linea.service';
 import { MarcaService } from 'src/modules/gestion-productos/marca/application/services/marca.service';
@@ -189,6 +190,32 @@ export class ProductoService {
         return ProductoMapper.toBusquedaDto(producto);
       }),
       total: PaginacionUtils.totalItems(result.total),
+    };
+  }
+
+  async obtenerHistorialPrecios(
+    productoId: number,
+    skip = 0,
+    take = 10,
+  ): Promise<{ data: HistorialPrecioDto[]; total: number }> {
+    await this.findEntityById(productoId);
+    const result = await this.repository.findHistorialPrecios(
+      productoId,
+      skip,
+      take,
+    );
+
+    return {
+      data: result.data.map((historial) => ({
+        id: historial.id,
+        productoId: historial.productoId,
+        precioAnterior: Number(historial.precioAnterior),
+        precioNuevo: Number(historial.precioNuevo),
+        fecha: historial.fecha,
+        motivo: historial.motivo,
+        usuarioId: historial.usuarioId,
+      })),
+      total: result.total,
     };
   }
 

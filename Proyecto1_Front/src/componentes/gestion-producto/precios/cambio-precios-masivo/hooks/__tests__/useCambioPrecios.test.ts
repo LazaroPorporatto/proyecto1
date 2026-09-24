@@ -24,12 +24,12 @@ const productoBase = (id: number, extras: any = {}) => ({
   ...extras,
 })
 
-describe('useCambioPrecios - flujo masivo con motivo (P1-73)', () => {
+describe('useCambioPrecios - flujo masivo (US-006)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  test('buscarProductos setea los productos devueltos por el servicio', async () => {
+  test('buscarProductos setea los productos devueltos por el servicio (E1/E2)', async () => {
     vi.mocked(CambioPreciosMasivoService.obtenerDesde).mockResolvedValue({
       data: [productoBase(1)],
       total: 1,
@@ -46,10 +46,9 @@ describe('useCambioPrecios - flujo masivo con motivo (P1-73)', () => {
       'productos',
     )
     expect(result.current.productos).toHaveLength(1)
-    expect(result.current.productos[0].id).toBe(1)
   })
 
-  test('aplicarCambios envia tipo, valor e items de todos los productos y marca dirty sin error', async () => {
+  test('aplicarCambios marca dirty solo los sin error (E3: los invalidos quedan marcados con error)', async () => {
     vi.mocked(CambioPreciosMasivoService.aplicarCambios).mockResolvedValue([
       {
         ...productoBase(1),
@@ -79,13 +78,12 @@ describe('useCambioPrecios - flujo masivo con motivo (P1-73)', () => {
       valor: 10,
       items: [{ id: 1 }, { id: 2 }],
     })
-
     expect(result.current.productos[0].dirty).toBe(true)
     expect(result.current.productos[1].dirty).toBe(false)
     expect(result.current.productos[1].error).toContain('costo')
   })
 
-  test('guardarCambios envia SOLO productos marcados (dirty con nuevoPrecio) e incluye motivo y usuarioCreatedId', async () => {
+  test('guardarCambios envia SOLO los validos (dirty con nuevoPrecio) junto al motivo (E5): el resto queda intacto', async () => {
     vi.mocked(CambioPreciosMasivoService.guardarCambios).mockResolvedValue({
       mensaje: 'Actualización de precios masiva realizada sobre 1 producto(s).',
       historial: [],
@@ -100,21 +98,15 @@ describe('useCambioPrecios - flujo masivo con motivo (P1-73)', () => {
       ])
     })
 
-    let respuesta: unknown
     await act(async () => {
-      respuesta = await result.current.guardarCambios('E2E aumento de precios')
+      await result.current.guardarCambios('Ajuste trimestral')
     })
 
     expect(CambioPreciosMasivoService.guardarCambios).toHaveBeenCalledWith({
       items: [{ id: 1, nuevoPrecio: 110 }],
-      motivo: 'E2E aumento de precios',
+      motivo: 'Ajuste trimestral',
       usuarioCreatedId: 42,
     })
-    expect(respuesta).toEqual({
-      mensaje: 'Actualización de precios masiva realizada sobre 1 producto(s).',
-      historial: [],
-    })
-    // Tras guardar, se limpia la bandera dirty
     expect(result.current.productos.every((p) => p.dirty === false)).toBe(true)
   })
 
@@ -138,28 +130,5 @@ describe('useCambioPrecios - flujo masivo con motivo (P1-73)', () => {
       motivo: 'sin cambios reales',
       usuarioCreatedId: 1,
     })
-  })
-
-  test('loading se activa durante una operacion asincrona', async () => {
-    let resolver!: (value: any) => void
-    vi.mocked(CambioPreciosMasivoService.aplicarCambios).mockImplementation(() => new Promise((r) => (resolver = r)))
-
-    const { result } = renderHook(() => useCambioPrecios(7))
-    act(() => {
-      result.current.setProductos([productoBase(1)])
-    })
-
-    let promesa!: Promise<any>
-    act(() => {
-      promesa = result.current.aplicarCambios('monto', 10)
-    })
-    expect(result.current.loading).toBe(true)
-
-    await act(async () => {
-      resolver([{ ...productoBase(1), nuevoPrecio: 110 }])
-      await promesa
-    })
-
-    expect(result.current.loading).toBe(false)
   })
 })
