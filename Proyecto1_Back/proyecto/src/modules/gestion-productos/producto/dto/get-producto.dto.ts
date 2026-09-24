@@ -116,6 +116,15 @@ export class GetProductoDto {
   stockMinimo: number;
 
   @ApiProperty({
+    description:
+      'Indica si el producto está en (o por debajo de) su stock minimo',
+    type: Boolean,
+    example: false,
+  })
+  @IsBoolean()
+  enStockBajo: boolean;
+
+  @ApiProperty({
     enum: UnidadPresentacion,
     enumName: 'UnidadPresentacion',
     description: 'Unidad de presentación del producto',

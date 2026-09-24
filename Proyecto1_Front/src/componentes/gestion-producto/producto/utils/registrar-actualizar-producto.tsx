@@ -447,15 +447,13 @@ export default function RegistrarActualizarProductoForm({
                   </div>
 
                   <div className="flex-1 min-w-[120px]">
-                    {producto ? (
-                      <CantidadesInput
-                        name={`stock`}
-                        label="Stock"
-                        value={stock || 0}
-                        onChange={(value) => setValue(`stock`, Number(value))}
-                        disabled={true}
-                      />
-                    ) : null}
+                    <CantidadesInput
+                      name={`stock`}
+                      label="Stock"
+                      value={stock ?? 0}
+                      onChange={(value) => setValue(`stock`, Number(value))}
+                      disabled={producto ? true : false}
+                    />
                   </div>
                 </div>
 

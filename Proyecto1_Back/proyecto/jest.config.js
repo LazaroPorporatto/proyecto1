@@ -4,6 +4,7 @@ module.exports = {
     moduleFileExtensions: ['ts', 'js', 'json'],
     rootDir: '.',
     testRegex: '.*\\.spec\\.ts$', // Ejecutar solo archivos .spec.ts
+    testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/'],
     transform: {
       '^.+\\.ts$': 'ts-jest',
     },

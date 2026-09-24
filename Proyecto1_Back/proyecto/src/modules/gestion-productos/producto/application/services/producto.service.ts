@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { IUnitOfWork } from 'src/modules/common/unit-of-work/iunit-of-work.';
 import { ProveedorService } from 'src/modules/organizacion/proveedor/application/services/proveedor.service';
@@ -30,6 +31,14 @@ import { UsuarioValidator } from 'src/modules/common/utils/validation/usuario-va
 import { ProductoDeletePolicy } from '../policies/producto-delete.policy';
 import { ProductoDenominacionService } from '../../domain/services/producto-denominacion.service';
 import { SugerirDenominacionDto } from '../../dto/sugerir-denominacion.dto';
+import { MovimientoStock } from '../../domain/entities/movimiento-stock.entity';
+import { IMovimientoStockRepository } from '../../domain/interfaces/movimiento-stock.repository-interface';
+import { EventPublisher } from '../../domain/interfaces/event-publisher.interface';
+import { DomainEvent } from '../../domain/events/domain-event.interface';
+import { TipoMovimiento } from '../../enums/tipo-movimiento.enum';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { TypeOrmUnitOfWork } from 'src/modules/common/unit-of-work/type-orm-unit-of-works';
 @Injectable()
 export class ProductoService {
   private readonly logger = new Logger(ProductoService.name);
@@ -55,6 +64,18 @@ export class ProductoService {
 
     private readonly productoDeletePolicy: ProductoDeletePolicy,
 
+    @Optional()
+    @Inject('IMovimientoStockRepository')
+    private readonly movimientoStockRepository?: IMovimientoStockRepository,
+
+    @Optional()
+    @Inject('EventPublisher')
+    private readonly eventPublisher?: EventPublisher,
+
+    @Optional()
+    @InjectDataSource()
+    private readonly dataSource?: DataSource,
+
   ) { }
 
   private readonly ENTITY_NAME = 'Producto';
@@ -77,6 +98,11 @@ export class ProductoService {
 
       usuario,
     );
+
+    // Trazabilidad (P1-30): el stock inicial de alta queda registrado como movimiento
+    if (typeof dto.stock === 'number' && dto.stock > 0) {
+      await this.registrarStockInicial(entity, dto.stock);
+    }
 
     return MessageFrontUtils.createSimple(
       `${this.ENTITY_NAME}`,
@@ -158,6 +184,7 @@ export class ProductoService {
     conStock: boolean,
     skip: number,
     take: number,
+    soloStockBajo = false,
   ): Promise<{ data: GetProductoDto[]; total: number }> {
     this.logger.warn(`service`);
     const result = await this.repository.findBy(
@@ -171,6 +198,7 @@ export class ProductoService {
       conStock,
       skip,
       take,
+      soloStockBajo,
     );
     return {
       data: result.data.map((producto) => {
@@ -291,8 +319,15 @@ export class ProductoService {
     productoId: number,
     cantidad: number,
     motivo: string,
+    tipoMovimiento: TipoMovimiento = TipoMovimiento.AJUSTE,
   ): Promise<number> {
-    return this.ajustarStockInterno(uow, productoId, cantidad, motivo);
+    return this.ajustarStockInterno(
+      uow,
+      productoId,
+      cantidad,
+      motivo,
+      tipoMovimiento,
+    );
   }
 
   async decrementarStock(
@@ -300,8 +335,15 @@ export class ProductoService {
     productoId: number,
     cantidad: number,
     motivo: string,
+    tipoMovimiento: TipoMovimiento = TipoMovimiento.AJUSTE,
   ): Promise<number> {
-    return this.ajustarStockInterno(uow, productoId, -cantidad, motivo);
+    return this.ajustarStockInterno(
+      uow,
+      productoId,
+      -cantidad,
+      motivo,
+      tipoMovimiento,
+    );
   }
 
   private async ajustarStockInterno(
@@ -309,6 +351,7 @@ export class ProductoService {
     productoId: number,
     delta: number,
     motivo: string,
+    tipoMovimiento: TipoMovimiento = TipoMovimiento.AJUSTE,
   ): Promise<number> {
     if (typeof motivo !== 'string' || motivo.trim().length === 0) {
       throw new BadRequestException(
@@ -321,21 +364,76 @@ export class ProductoService {
       throw new Error(`Producto con ID ${productoId} no encontrado`);
     }
 
-    const stockActual = producto.stock ?? 0;
-    const nuevoStock = stockActual + delta;
+    const stockAnterior = producto.stock ?? 0;
 
-    if (nuevoStock < 0) {
-      throw new BadRequestException('El stock no puede quedar negativo.');
-    }
+    // Regla de dominio: vive en la entidad Producto
+    Producto.aplicarAjusteDeStock(producto, delta, motivo, tipoMovimiento);
 
-    producto.stock = nuevoStock;
     await this.repository.updateEntity(uow, producto);
 
+    // Trazabilidad (P1-30): registrar el movimiento dentro de la misma transacción
+    if (this.movimientoStockRepository) {
+      const movimiento = MovimientoStock.crear({
+        productoId,
+        tipoMovimiento,
+        cantidad: delta,
+        motivo,
+        stockAnterior,
+        stockNuevo: producto.stock,
+      });
+      await this.movimientoStockRepository.save(uow, movimiento);
+    }
+
+    // Eventos de dominio (P1-31): detectar en el dominio, reaccionar en aplicación
+    this.despacharEventos(Producto.sacarEventos(producto));
+
     this.logger.log(
-      `[StockService] ${motivo} → ${stockActual} → ${nuevoStock}`,
+      `[StockService] ${motivo} → ${stockAnterior} → ${producto.stock}`,
     );
 
-    return nuevoStock;
+    return producto.stock;
+  }
+
+  private despacharEventos(eventos: DomainEvent[]): void {
+    if (!eventos.length) return;
+
+    if (this.eventPublisher) {
+      this.eventPublisher.publish(eventos);
+    } else {
+      eventos.forEach((evento) =>
+        this.logger.log(
+          `[Evento de dominio: ${evento.constructor.name}] ${JSON.stringify(evento)}`,
+        ),
+      );
+    }
+  }
+
+  private async registrarStockInicial(
+    producto: Producto,
+    stockInicial: number,
+  ): Promise<void> {
+    if (!this.movimientoStockRepository || !this.dataSource) return;
+    if (typeof stockInicial !== 'number' || stockInicial <= 0) return;
+
+    const uow = new TypeOrmUnitOfWork(this.dataSource);
+    await uow.start();
+    try {
+      const movimiento = MovimientoStock.crear({
+        productoId: producto.id,
+        tipoMovimiento: TipoMovimiento.AJUSTE,
+        cantidad: stockInicial,
+        motivo: 'Stock inicial',
+        stockAnterior: 0,
+        stockNuevo: stockInicial,
+      });
+      await this.movimientoStockRepository.save(uow, movimiento);
+      await uow.commit();
+    } catch (error) {
+      await uow.rollback();
+      throw error;
+    } finally {
+      await uow.release();
+    }
   }
 
   /**

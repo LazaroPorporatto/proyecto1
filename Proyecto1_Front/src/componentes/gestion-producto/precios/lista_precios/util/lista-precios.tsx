@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { formatPrice, formatPercentage } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
+import { formatPrice, formatPercentage, formatCantidades } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
 import { Column } from "../../../../herramientas/tablas/tabla-flexible-ag-grid";
 import { Card, CardContent, CardHeader } from "../../../../ui/Card";
 import { Alertas, TipoAlerta, TituloAlerta, useAlerts } from "../../../../herramientas/alertas/alertas";
@@ -73,6 +73,18 @@ export default function ListaPrecios() {
         type: "text",
         editable: false,
         align: "right",
+        formatFunction: ({ value, row }) => {
+          const bajo = row.enStockBajo ?? (row.stock ?? 0) <= (row.stockMinimo ?? 0);
+          const faltante = (row.stockMinimo ?? 0) - (row.stock ?? 0);
+          return bajo ? (
+            <span className="text-red-600 font-semibold">
+              {formatCantidades(value || 0)}
+              {faltante > 0 && <span className="text-red-500 text-xs font-normal"> (faltan {formatCantidades(faltante)})</span>}
+            </span>
+          ) : (
+            <span>{formatCantidades(value || 0)}</span>
+          );
+        },
       },
       {
         header: "Costo",

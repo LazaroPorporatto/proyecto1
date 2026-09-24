@@ -60,6 +60,7 @@ export interface Producto {
  */
   stockMinimo: number;
   utilizaStockMinimo: boolean;
+  enStockBajo?: boolean;
   unidadPresentacion: UnidadPresentacion;
   cantidadPresentacion: number;
  // oferta: boolean;
@@ -81,6 +82,9 @@ export interface ConsultarProducto {
   codigoProveedor: string;
   codigoReferencia: string;
   stock: number;
+  stockMinimo: number;
+  utilizaStockMinimo: boolean;
+  enStockBajo: boolean;
   precio: number;
   precioOferta: number;
   ubicacion?: string | null;
@@ -104,6 +108,8 @@ export interface ConsultarProductosCambioPreciosMasivo {
   observacion: string;
   costo: number;
   stock: number;
+  stockMinimo: number;
+  enStockBajo: boolean;
   precio: number;
   precioConIva: number;
   alicuotaIva: number;
@@ -124,6 +130,8 @@ export interface ConsultarProductosListaPrecios {
   observacion: string;
   costo: number;
   stock: number;
+  stockMinimo: number;
+  enStockBajo: boolean;
   precio: number;
   precioConIva: number;
   alicuotaIva: number;
@@ -185,6 +193,7 @@ export interface ProductoSeleccionado {
   cantidadPresentacion: number;
   utilizaStockMinimo: boolean;
   stockMinimo: number;
+  enStockBajo?: boolean;
   cantidadOferta: number;
   oferta: boolean;
 }

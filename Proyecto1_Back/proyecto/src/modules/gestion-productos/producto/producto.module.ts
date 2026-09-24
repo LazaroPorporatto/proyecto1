@@ -20,11 +20,15 @@ import { ProductoValidationService } from './domain/services/producto-validation
 import { ProductoIntrinsicValidationService } from './domain/services/producto-intrinsic-validation.service.ts';
 import { ProductoDeletePolicy } from './application/policies/producto-delete.policy';
 import { ProductoDenominacionService } from './domain/services/producto-denominacion.service';
+import { MovimientoStock } from './domain/entities/movimiento-stock.entity';
+import { MovimientoStockRepository } from './infraestructure/repositories/movimiento-stock.repository';
+import { MovimientoStockPersistenceAdapter } from './infraestructure/repositories/movimiento-stock.persistence-adapter';
+import { StockEventPublisher } from './infraestructure/events/stock-event-publisher';
 
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Producto]),
+    TypeOrmModule.forFeature([Producto, MovimientoStock]),
     CommonModule,
     forwardRef(() => LineaModule),
     forwardRef(() => MarcaModule),
@@ -47,6 +51,16 @@ import { ProductoDenominacionService } from './domain/services/producto-denomina
       provide: 'IProductoRepository',
       useClass: ProductoRepository,
     },
+    MovimientoStockRepository,
+    MovimientoStockPersistenceAdapter,
+    {
+      provide: 'IMovimientoStockRepository',
+      useClass: MovimientoStockRepository,
+    },
+    {
+      provide: 'EventPublisher',
+      useClass: StockEventPublisher,
+    },
     {
       provide: 'UnitOfWork',
       useFactory: (dataSource: DataSource): IUnitOfWork => {
@@ -62,7 +76,9 @@ import { ProductoDenominacionService } from './domain/services/producto-denomina
     TypeOrmModule,
     ProductoService,
     ProductoPersistenceAdapter,
+    MovimientoStockRepository,
     'IProductoRepository',
+    'IMovimientoStockRepository',
   ],
 })
 export class ProductoModule {}

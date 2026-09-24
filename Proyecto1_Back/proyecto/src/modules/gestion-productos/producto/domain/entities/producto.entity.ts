@@ -19,8 +19,12 @@ import { CantidadColumn } from 'src/modules/common/decorators/cantidad-column.de
 import { PorcentajeColumn } from 'src/modules/common/decorators/porcentaje-column.decorator';
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
 import { UnidadPresentacion } from '../../enums/unidad-presentacion.enum';
+import { TipoMovimiento } from '../../enums/tipo-movimiento.enum';
 import { BadRequestException } from '@nestjs/common';
 import { redondear } from 'src/modules/common/utils/number/redondeo';
+import { DomainEvent } from '../events/domain-event.interface';
+import { StockActualizadoEvent } from '../events/stock-actualizado.event';
+import { StockBajoEvent } from '../events/stock-bajo.event';
 
 @Entity('producto')
 export class Producto {
@@ -232,5 +236,133 @@ export class Producto {
    */
   aplicarAjustePrecio(tipo: 'porcentaje' | 'monto', valor: number): void {
     this.fijarPrecio(this.calcularPrecioAjustado(tipo, valor));
+  }
+
+  // ========== REGLAS DE DOMINIO: STOCK ==========
+
+  /**
+   * Calcula el precio de venta derivado de Costo + Margen (porcentaje).
+   * Regla: precio = costo * (1 + margen/100), con redondeo a 2 decimales.
+   */
+  static calcularPrecio(instancia: Producto): number {
+    const costo = instancia.costo ?? 0;
+    const margen = instancia.porcentaje ?? 0;
+    return redondear(costo * (1 + margen / 100), 2);
+  }
+
+  /**
+   * API de instancia (lenguaje ubicuo): mismo comportamiento que el metodo estatico.
+   */
+  calcularPrecio(): number {
+    return Producto.calcularPrecio(this);
+  }
+
+  /**
+   * Regla de dominio: "stock bajo".
+   * Un producto entra en alerta cuando su stock actual es menor o igual a su
+   * stock minimo (solamente si utiliza el control de stock minimo).
+   */
+  static estaBajoMinimo(instancia: Producto): boolean {
+    if (!instancia.utilizaStockMinimo) return false;
+    return (instancia.stock ?? 0) <= (instancia.stockMinimo ?? 0);
+  }
+
+  /**
+   * API de instancia (lenguaje ubicuo): mismo comportamiento que el metodo estatico.
+   */
+  estaBajoMinimo(): boolean {
+    return Producto.estaBajoMinimo(this);
+  }
+
+  /**
+   * Regla de dominio: "ajuste de stock".
+   * - Todo ajuste requiere un motivo obligatorio.
+   * - El stock no puede quedar negativo.
+   * Aplica el cambio de stock sobre la instancia, registra el evento de dominio
+   * StockActualizado y, si al quedar por debajo del minimo, ademas StockBajo.
+   */
+  static aplicarAjusteDeStock(
+    instancia: Producto,
+    cantidad: number,
+    motivo: string,
+    tipoMovimiento: TipoMovimiento = TipoMovimiento.AJUSTE,
+  ): void {
+    if (typeof motivo !== 'string' || motivo.trim().length === 0) {
+      throw new BadRequestException(
+        'El motivo del ajuste de stock es obligatorio.',
+      );
+    }
+
+    const stockAnterior = instancia.stock ?? 0;
+    const nuevoStock = stockAnterior + cantidad;
+
+    if (nuevoStock < 0) {
+      throw new BadRequestException('El stock no puede quedar negativo.');
+    }
+
+    instancia.stock = nuevoStock;
+
+    Producto.registrarEvento(
+      instancia,
+      new StockActualizadoEvent(
+        instancia.id,
+        stockAnterior,
+        nuevoStock,
+        tipoMovimiento,
+        motivo,
+      ),
+    );
+
+    if (Producto.estaBajoMinimo(instancia)) {
+      Producto.registrarEvento(
+        instancia,
+        new StockBajoEvent(
+          instancia.id,
+          instancia.denominacion,
+          nuevoStock,
+          instancia.stockMinimo ?? 0,
+        ),
+      );
+    }
+  }
+
+  /**
+   * API de instancia (lenguaje ubicuo): mismo comportamiento que el metodo estatico.
+   */
+  ajustarStock(
+    cantidad: number,
+    motivo: string,
+    tipoMovimiento: TipoMovimiento = TipoMovimiento.AJUSTE,
+  ): void {
+    Producto.aplicarAjusteDeStock(this, cantidad, motivo, tipoMovimiento);
+  }
+
+  /**
+   * Coleccion de eventos de dominio generados por la entidad.
+   * No se persiste: la capa de aplicacion los desapila y despacha.
+   */
+  private _eventos: DomainEvent[] = [];
+
+  private static registrarEvento(instancia: Producto, evento: DomainEvent): void {
+    const instanciaComoCualquiera = instancia as any;
+    if (!Array.isArray(instanciaComoCualquiera._eventos)) {
+      instanciaComoCualquiera._eventos = [];
+    }
+    instanciaComoCualquiera._eventos.push(evento);
+  }
+
+  static sacarEventos(instancia: Producto): DomainEvent[] {
+    const instanciaComoCualquiera = instancia as any;
+    if (!Array.isArray(instanciaComoCualquiera._eventos)) return [];
+    const eventos = [...instanciaComoCualquiera._eventos];
+    instanciaComoCualquiera._eventos = [];
+    return eventos;
+  }
+
+  /**
+   * API de instancia (lenguaje ubicuo): mismo comportamiento que el metodo estatico.
+   */
+  sacarEventos(): DomainEvent[] {
+    return Producto.sacarEventos(this);
   }
 }

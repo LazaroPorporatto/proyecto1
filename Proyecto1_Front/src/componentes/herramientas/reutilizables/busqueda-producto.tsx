@@ -215,7 +215,18 @@ export default function ConsultarProductosConFiltros({
       type: "text",
       align: "right",
       editable: false,
-      formatFunction: ({ value }) => <span>{formatCantidades(value || 0)}</span>,
+      formatFunction: ({ value, row }) => {
+        const bajo = row.enStockBajo ?? (row.utilizaStockMinimo && (row.stock ?? 0) <= (row.stockMinimo ?? 0));
+        const faltante = (row.stockMinimo ?? 0) - (row.stock ?? 0);
+        return bajo ? (
+          <span className="text-red-600 font-semibold">
+            {formatCantidades(value || 0)}
+            {faltante > 0 && <span className="text-red-500 text-xs font-normal"> (faltan {formatCantidades(faltante)})</span>}
+          </span>
+        ) : (
+          <span>{formatCantidades(value || 0)}</span>
+        );
+      },
     },
     {
       header: "Ubicación",

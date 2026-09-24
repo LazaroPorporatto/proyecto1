@@ -228,6 +228,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
     conStock: boolean,
     skip: number,
     take: number,
+    soloStockBajo = false,
   ): Promise<{ data: Producto[]; total: number }> {
     this.logger.warn(`llega`);
     const query = this.repository
@@ -283,7 +284,15 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       query.andWhere('producto.stock > 0');
     }
     query.andWhere('producto.deletedAt IS NULL');
-    query.orderBy('producto.denominacion', 'ASC');
+
+    if (soloStockBajo) {
+      query.andWhere('producto.utilizaStockMinimo = 1');
+      query.andWhere('producto.stock <= producto.stockMinimo');
+      query.addSelect('(producto.stockMinimo - producto.stock)', 'stockFaltante');
+      query.orderBy('stockFaltante', 'DESC');
+    } else {
+      query.orderBy('producto.denominacion', 'ASC');
+    }
     // Paginación
     query.skip(skip).take(take);
 

@@ -10,9 +10,11 @@ interface Props {
   roles:number[];
   codigo: string;
   exacto: boolean;
+  soloStockBajo?: boolean;
   denominacion?: string;
   onChangeCodigo: (value: string) => void;
   onChangeExacto: (value: boolean) => void;
+  onChangeSoloStockBajo?: (value: boolean) => void;
   onChangeDenominacion?: (value: string) => void;
   onBuscarRapido: () => void;
   onNuevo: () => void;
@@ -27,9 +29,11 @@ export function ProductosHeader({
   roles,
   codigo,
   exacto,
+  soloStockBajo,
   denominacion,
   onChangeCodigo,
   onChangeExacto,
+  onChangeSoloStockBajo,
   onChangeDenominacion,
   onBuscarRapido,
   onNuevo,
@@ -83,6 +87,16 @@ export function ProductosHeader({
             />
             Exacto
           </label>
+          {onChangeSoloStockBajo && (
+            <label className="flex items-center gap-2 text-sm" title="Filtrar solo productos con stock en (o por debajo del) mínimo">
+              <input
+                type="checkbox"
+                checked={soloStockBajo ?? false}
+                onChange={(e) => onChangeSoloStockBajo(e.target.checked)}
+              />
+              <span className="text-red-600 font-medium">Solo stock bajo</span>
+            </label>
+          )}
         </div>
 
         <EstadisticasSimples filtrados={total} mostrados={mostrados} />

@@ -7,7 +7,7 @@ import {
   useConfirmation,
 } from "../../../../herramientas/alertas/alertas-confirmacion";
 import { ConsultarProductosCambioPreciosMasivo } from "../../../../../interfaces/gestion-producto/producto/interfaces-producto";
-import { formatPrice, formatPercentage } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
+import { formatPrice, formatPercentage, formatCantidades } from "../../../../herramientas/formateo-de-campos/fucion-formateo";
 import { Column } from "../../../../herramientas/tablas/tabla-flexible-ag-grid";
 import { useConfiguracionSistema } from "../../../../sistema/ConfiguracionSistemaContext";
 import { useFiltrosContext } from "../../../../../context/filtros-contesxt";
@@ -254,6 +254,26 @@ export default function CambioPreciosMasivo() {
             )}
           </div>
         ),
+      },
+      {
+        header: "Stock",
+        accessor: "stock",
+        flex: 0.5,
+        type: "text",
+        align: "right",
+        editable: false,
+        formatFunction: ({ value, row }) => {
+          const bajo = row.enStockBajo ?? (row.stock ?? 0) <= (row.stockMinimo ?? 0);
+          const faltante = (row.stockMinimo ?? 0) - (row.stock ?? 0);
+          return bajo ? (
+            <span className="text-red-600 font-semibold">
+              {formatCantidades(value || 0)}
+              {faltante > 0 && <span className="text-red-500 text-xs font-normal"> (faltan {formatCantidades(faltante)})</span>}
+            </span>
+          ) : (
+            <span>{formatCantidades(value || 0)}</span>
+          );
+        },
       },
       {
         header: "Costo",

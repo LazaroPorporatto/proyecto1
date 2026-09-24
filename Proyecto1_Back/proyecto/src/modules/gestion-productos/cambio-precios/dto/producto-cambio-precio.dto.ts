@@ -19,6 +19,14 @@ export class ProductoCambioPrecioDto {
   @ApiProperty({ description: 'Stock actual del producto' })
   stock: number;
 
+  @ApiProperty({ description: 'Stock mínimo configurado del producto' })
+  stockMinimo: number;
+
+  @ApiProperty({
+    description: 'Indica si el producto está en (o por debajo de) su stock minimo',
+  })
+  enStockBajo: boolean;
+
   @ApiProperty({ description: 'Precio de venta actual (sin IVA)' })
   precio: number;
 

@@ -126,6 +126,7 @@ export class ProductoController {
       conStock,
       skip,
       take,
+      soloStockBajo,
     } = dto;
     return this.service.findBy(
       denominacion,
@@ -138,6 +139,7 @@ export class ProductoController {
       conStock,
       skip,
       take,
+      soloStockBajo,
     );
   }
 

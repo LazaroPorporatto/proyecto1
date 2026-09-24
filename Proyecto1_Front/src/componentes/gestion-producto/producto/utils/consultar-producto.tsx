@@ -25,6 +25,7 @@ import { ProductosModales } from "../modales/producto-modales";
 import { usePaginacion } from "../../../../hooks/use-paginacion";
 import { PAGINACION } from "../../../../config/paginacion";
 import { useProductoImpresion } from "../hooks/use-producto-impresion";
+import { formatearCeldaStock } from "./stock-celda";
 import { ProductosHeaderLg } from "../componentes/header-producto-lg";
 import { DatosTabla } from "../componentes/datos-tabla";
 import { DatosCard } from "../componentes/datos-card";
@@ -128,6 +129,14 @@ export default function ConsultarProductos() {
     }, 400);
     return () => clearTimeout(timer);
   }, [valoresFiltros.denominacion]);
+
+  useEffect(() => {
+    if (!inicializacionCompleta.current) return;
+    const timer = setTimeout(() => {
+      handleBuscarProductos(true);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [valoresFiltros.soloStockBajo]);
 
   useEffect(() => {
     if (buscar.cont > 0 && buscar.componente === "consultar-producto") {
@@ -418,6 +427,7 @@ export default function ConsultarProductos() {
       marcaId: valoresFiltros.marcaId,
       proveedorId: valoresFiltros.proveedorId,
       conStock: valoresFiltros.conStock,
+      soloStockBajo: valoresFiltros.soloStockBajo,
       skip: skip,
       take: take,
     };
@@ -489,6 +499,15 @@ export default function ConsultarProductos() {
       scrollable: false,
     },
     {
+      header: "Stock",
+      accessor: "stock",
+      flex: 0.4,
+      type: "text",
+      editable: false,
+      align: "right",
+      formatFunction: formatearCeldaStock,
+    },
+    {
       header: "Precio",
       accessor: "precio",
       flex: 0.3,
@@ -524,9 +543,13 @@ export default function ConsultarProductos() {
                   roles={getRoles()}
                   codigo={codigo}
                   exacto={exacto}
+                  soloStockBajo={valoresFiltros.soloStockBajo}
                   denominacion={valoresFiltros.denominacion || ""}
                   onChangeCodigo={setCodigo}
                   onChangeExacto={setExacto}
+                  onChangeSoloStockBajo={(value) =>
+                    setValoresFiltros((prev: any) => ({ ...prev, soloStockBajo: value }))
+                  }
                   onChangeDenominacion={(value) =>
                     setValoresFiltros((prev: any) => ({ ...prev, denominacion: value }))
                   }
@@ -544,10 +567,14 @@ export default function ConsultarProductos() {
                 <ProductosHeaderLg
                   codigo={codigo}
                   exacto={exacto}
+                  soloStockBajo={valoresFiltros.soloStockBajo}
                   denominacion={valoresFiltros.denominacion || ""}
                   roles={getRoles()}
                   onChangeCodigo={setCodigo}
                   onChangeExacto={setExacto}
+                  onChangeSoloStockBajo={(value) =>
+                    setValoresFiltros((prev: any) => ({ ...prev, soloStockBajo: value }))
+                  }
                   onChangeDenominacion={(value) =>
                     setValoresFiltros((prev: any) => ({ ...prev, denominacion: value }))
                   }

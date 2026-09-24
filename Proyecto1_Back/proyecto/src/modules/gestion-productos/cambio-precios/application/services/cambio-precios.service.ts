@@ -183,6 +183,8 @@ export class CambioPreciosService {
       observacion: producto.observacion ?? '',
       costo: producto.costo ?? 0,
       stock: producto.stock ?? 0,
+      stockMinimo: producto.stockMinimo ?? 0,
+      enStockBajo: Producto.estaBajoMinimo(producto),
       precio,
       precioConIva: redondear(precio * (1 + alicuota / 100), 2),
       alicuotaIva: alicuota,

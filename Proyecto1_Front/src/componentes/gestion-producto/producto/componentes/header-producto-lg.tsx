@@ -9,10 +9,12 @@ import { puedeAgregarProducto } from "../domain/permisos-producto";
 interface Props {
   codigo: string;
   exacto: boolean;
+  soloStockBajo?: boolean;
   denominacion?: string;
   roles:number[];
   onChangeCodigo: (value: string) => void;
   onChangeExacto: (value: boolean) => void;
+  onChangeSoloStockBajo?: (value: boolean) => void;
   onChangeDenominacion?: (value: string) => void;
   onBuscarRapido: () => void;
   onNuevo: () => void;
@@ -26,10 +28,12 @@ interface Props {
 export function ProductosHeaderLg({
   codigo,
   exacto,
+  soloStockBajo,
   denominacion,
   roles,
   onChangeCodigo,
   onChangeExacto,
+  onChangeSoloStockBajo,
   onChangeDenominacion,
   onBuscarRapido,
   onNuevo,
@@ -86,6 +90,16 @@ export function ProductosHeaderLg({
             />
             Exacto
           </label>
+          {onChangeSoloStockBajo && (
+            <label className="flex items-center gap-2 text-sm" title="Filtrar solo productos con stock en (o por debajo del) mínimo">
+              <input
+                type="checkbox"
+                checked={soloStockBajo ?? false}
+                onChange={(e) => onChangeSoloStockBajo(e.target.checked)}
+              />
+              <span className="text-red-600 font-medium">Solo stock bajo</span>
+            </label>
+          )}
         </div>
 
       </div>

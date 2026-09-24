@@ -31,6 +31,7 @@ export interface IProductoRepository {
     conStock: boolean,
     skip: number,
     take: number,
+    soloStockBajo?: boolean,
   ): Promise<{ data: Producto[]; total: number }>;
 
   findByRapido(

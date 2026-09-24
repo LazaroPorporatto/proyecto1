@@ -15,6 +15,7 @@ interface ValoresFiltros {
   marcaId?: number;
   denominacionMarca?: string;
   conStock?: boolean;
+  soloStockBajo?: boolean;
   fechaDesde?: string;
   fechaHasta?: string;
   clienteId?: number;
