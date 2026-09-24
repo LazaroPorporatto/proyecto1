@@ -49,6 +49,18 @@ export interface ItemsProveedorEnPayload {
   usuarioCreatedId: number;
 }
 
+export const validarMotivoCambioPrecio = (
+  precioInicial: number,
+  precioNuevo: number,
+  motivo?: string,
+): string | null => {
+  if (precioInicial !== precioNuevo && !motivo?.trim()) {
+    return "Debe indicar el motivo del cambio de precio.";
+  }
+
+  return null;
+};
+
 //===================== schema de validacion ============================================//
 
 export const schema = (utilizaStockMinimo: boolean, utilizaPack: boolean, usaOferta: boolean) =>
