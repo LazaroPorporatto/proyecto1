@@ -10,6 +10,7 @@ import { Producto } from 'src/modules/gestion-productos/producto/domain/entities
 import { Empresa } from 'src/modules/organizacion/empresa/domain/entities/empresa.entity';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { SeedUsuarioService } from '../seed-usuario/seed-usuario.service';
+import { SeedProductoService } from '../seedProducto/seed-producto.service';
 import { Rol } from 'src/modules/gestion-usuario/rol/domain/entities/rol.entity';
 import { Provincia } from 'src/modules/gutil/provincia/domain/entities/provincia.entity';
 import { Localidad } from 'src/modules/gutil/localidad/domain/entities/localidad.entity';
@@ -52,6 +53,7 @@ import { SuperLinea } from 'src/modules/gestion-productos/superlinea/domain/enti
     SeedUsuarioService,
     SeedOrganizacionService,
     SeedFamiliaProductoService,
+    SeedProductoService,
 
   ],
 })

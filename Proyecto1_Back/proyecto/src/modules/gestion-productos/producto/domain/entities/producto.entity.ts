@@ -241,13 +241,31 @@ export class Producto {
   // ========== REGLAS DE DOMINIO: STOCK ==========
 
   /**
+   * Regla P1-73 "Precio = Costo + Margen".
+   * precio = costo * (1 + margen/100), con redondeo a 2 decimales.
+   */
+  static calcularPrecioDesdeCostoYMargen(costo: number, margen: number): number {
+    return redondear(costo * (1 + margen / 100), 2);
+  }
+
+  /**
+   * Recalcula el margen implicito hacia atras.
+   * Regla: margen = (precio/costo - 1) * 100.
+   * Si no hay costo no se puede recalcular y se deriva 0.
+   */
+  static calcularMargenImplicito(costo: number, precio: number): number {
+    if (costo <= 0) return 0;
+    return redondear((precio / costo - 1) * 100, 2);
+  }
+
+  /**
    * Calcula el precio de venta derivado de Costo + Margen (porcentaje).
-   * Regla: precio = costo * (1 + margen/100), con redondeo a 2 decimales.
    */
   static calcularPrecio(instancia: Producto): number {
-    const costo = instancia.costo ?? 0;
-    const margen = instancia.porcentaje ?? 0;
-    return redondear(costo * (1 + margen / 100), 2);
+    return Producto.calcularPrecioDesdeCostoYMargen(
+      instancia.costo ?? 0,
+      instancia.porcentaje ?? 0,
+    );
   }
 
   /**
@@ -255,6 +273,85 @@ export class Producto {
    */
   calcularPrecio(): number {
     return Producto.calcularPrecio(this);
+  }
+
+  /**
+   * Regla P1-73 "Precio = Costo + Margen": fija costo y margen (15% estandar o
+   * especial por producto) y deriva el precio de venta.
+   */
+  fijarCostoYMargen(costo: number, margen: number): void {
+    this.costo = costo;
+    this.porcentaje = margen;
+    this.precio = Producto.calcularPrecioDesdeCostoYMargen(costo, margen);
+  }
+
+  /**
+   * Concilia costo, margen y precio al guardar (alta o edicion) para que la regla
+   * P1-73 quede SIEMPRE coherente, sin depender de lo que envie el cliente:
+   * - Si viene (o cambia) el margen y no se fija un precio explicitamente ->
+   *   el precio se deriva del margen (P1-73: el margen es la fuente).
+   * - Si cambia solo el costo -> el precio se re-deriva con el margen vigente.
+   * - Si se fija explicitamente un precio (y el margen no cambia) -> el margen
+   *   se recalcula hacia atras.
+   * - Si cambian margen y precio a la vez -> manda el margen (P1-73).
+   * - Si no llega nada de costo/margen/precio -> no se toca nada.
+   */
+  resolverCostoPrecioYMargen(
+    costo?: number,
+    porcentaje?: number,
+    precio?: number,
+  ): void {
+    if (costo === undefined && porcentaje === undefined && precio === undefined) {
+      return;
+    }
+
+    const esCreacion =
+      this.costo === undefined && this.porcentaje === undefined && this.precio === undefined;
+
+    const costoActual = this.costo ?? 0;
+    const margenActual = this.porcentaje;
+    const precioActual = this.precio ?? 0;
+
+    const precioViene = precio !== undefined && precio !== null;
+    // Un margen 0 con precio explícito no es "intención de margen": manda el precio.
+    const margenViene =
+      porcentaje !== undefined &&
+      porcentaje !== null &&
+      (porcentaje !== 0 || !precioViene);
+    const cambiaCosto = costo !== undefined && redondear(costo, 2) !== redondear(costoActual, 2);
+    const cambiaMargen =
+      margenViene &&
+      (esCreacion || redondear(porcentaje!, 2) !== redondear(margenActual ?? 0, 2));
+    const cambiaPrecio =
+      precioViene &&
+      (esCreacion || redondear(precio!, 2) !== redondear(precioActual, 2));
+
+    if (cambiaMargen) {
+      // Regla P1-73: el margen es la fuente y el precio se deriva.
+      this.costo = costo ?? costoActual;
+      this.porcentaje = porcentaje!;
+      this.precio = Producto.calcularPrecioDesdeCostoYMargen(this.costo, this.porcentaje);
+      return;
+    }
+
+    if (!precioViene && cambiaCosto && margenActual !== undefined && margenActual !== null) {
+      // Cambió solo el costo: el precio se re-deriva con el margen vigente (P1-73).
+      this.costo = costo!;
+      this.precio = Producto.calcularPrecioDesdeCostoYMargen(this.costo, margenActual);
+      return;
+    }
+
+    if (cambiaPrecio) {
+      // Se fijó un precio: el margen se recalcula hacia atrás.
+      if (costo !== undefined) this.costo = costo;
+      this.precio = redondear(precio!, 2);
+      this.porcentaje = Producto.calcularMargenImplicito(this.costo ?? 0, this.precio);
+      return;
+    }
+
+    if (costo !== undefined) {
+      this.costo = costo;
+    }
   }
 
   /**

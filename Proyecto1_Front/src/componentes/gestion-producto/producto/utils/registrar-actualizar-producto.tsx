@@ -96,6 +96,25 @@ export default function RegistrarActualizarProductoForm({
   const lineaIdActual = watch("lineaId");
   const denominacionActual = watch("denominacion");
 
+  // P1-73: Precio = Costo + Margen. Misma fórmula y redondeo que la entidad del
+  // backend (`redondear(x,2) = Math.round((x + EPSILON) * 100) / 100`) para que
+  // el precio que muestra el form coincida con el que persiste el servidor.
+  // Regla: si el margen cambia, manda el margen y se deriva el precio; si solo
+  // cambia el costo, se re-deriva con el margen vigente; el precio tipeado a
+  // mano queda intacto (el backend recalcula el % al guardar).
+  const redondearPrecio = (valor: number): number =>
+    Math.round((valor + Number.EPSILON) * 100) / 100;
+
+  const sincronizarPrecio = (costoNuevo: number, margenNuevo: number) => {
+    const costo = Number.isFinite(costoNuevo) ? costoNuevo : 0;
+    const margen = Number.isFinite(margenNuevo) ? margenNuevo : 0;
+    if (costo > 0 && margen > 0) {
+      setValue("precio", redondearPrecio(costo * (1 + margen / 100)), {
+        shouldValidate: true,
+      });
+    }
+  };
+
   //=============================== CONSTANTES PARA MOVIMIENTO ENTRE CAMPOS ==================================
   const denominacionProductoRef = useRef<HTMLInputElement>(null);
   useEnterFocus(denominacionProductoRef);
@@ -370,7 +389,10 @@ export default function RegistrarActualizarProductoForm({
                     name="costo"
                     label="Costo"
                     value={watch("costo") || 0}
-                    onChange={(value) => setValue("costo", value, { shouldValidate: true })}
+                    onChange={(value) => {
+                      setValue("costo", Number(value) || 0, { shouldValidate: true });
+                      sincronizarPrecio(Number(value) || 0, Number(watch("porcentaje")) || 0);
+                    }}
                     maxDigits={9}
                     disabled={producto && producto.sistema > 0 ? true : false}
                   />
@@ -386,7 +408,10 @@ export default function RegistrarActualizarProductoForm({
                     name="porcentaje"
                     label="Porcentaje"
                     value={watch("porcentaje") || 0}
-                    onChange={(value) => setValue("porcentaje", value, { shouldValidate: true })}
+                    onChange={(value) => {
+                      setValue("porcentaje", Number(value) || 0, { shouldValidate: true });
+                      sincronizarPrecio(Number(watch("costo")) || 0, Number(value) || 0);
+                    }}
                     disabled={producto && producto.sistema > 0 ? true : false}
                   />
 

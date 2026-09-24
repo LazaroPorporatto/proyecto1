@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SeedOrganizacionService } from '../seed-organizacion/seed-organizacion.service';
 import { SeedFamiliaProductoService } from '../seedFamiliaProducto/seed-familia-producto.service';
 import { SeedUsuarioService } from '../seed-usuario/seed-usuario.service';
+import { SeedProductoService } from '../seedProducto/seed-producto.service';
 
 @Injectable()
 export class SeedAllService {
@@ -11,7 +12,7 @@ export class SeedAllService {
     private readonly seedUsuarioService: SeedUsuarioService,
     private readonly seedOrganizacionService: SeedOrganizacionService,
     private readonly seedArticuloService: SeedFamiliaProductoService,
-    
+    private readonly seedProductoService: SeedProductoService,
   ) {}
 
   async runAllSeeds() {
@@ -21,6 +22,7 @@ export class SeedAllService {
       await this.seedUsuarioService.runAllSeeds();
       await this.seedOrganizacionService.runAllSeeds();
       await this.seedArticuloService.runAllSeeds(); 
+      await this.seedProductoService.runAllSeeds(); 
     
    
     } catch (error) {

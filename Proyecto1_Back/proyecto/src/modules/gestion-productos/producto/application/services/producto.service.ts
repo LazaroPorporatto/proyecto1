@@ -85,6 +85,26 @@ export class ProductoService {
       `Creando un nuevo ${this.ENTITY_NAME} con denominación: ${dto.denominacion} a: ${dto.denominacion}`,
     );
 
+    // Regla P1-73 (vive en la entidad Producto): Precio = Costo + Margen.
+    // Se conforman valores coherentes ANTES de validar/persistir, sin depender
+    // de lo que calcule (o deje de calcular) el cliente.
+    const margenEnviado = dto.porcentaje;
+    const precioEnviado = dto.precio;
+    if (
+      (precioEnviado === undefined || precioEnviado === null) &&
+      (margenEnviado === undefined || margenEnviado === null)
+    ) {
+      throw new BadRequestException(
+        'Se debe indicar el margen (porcentaje) o el precio del producto.',
+      );
+    }
+
+    const reglaPrecio = new Producto();
+    reglaPrecio.resolverCostoPrecioYMargen(dto.costo, margenEnviado, precioEnviado);
+    if (dto.costo !== undefined) dto.costo = reglaPrecio.costo;
+    dto.porcentaje = reglaPrecio.porcentaje;
+    dto.precio = reglaPrecio.precio!;
+
     // Orquestar todas las validaciones
     const { marca, linea, usuario } =
       await this.validarYPrepararCreacion(dto);
@@ -498,6 +518,35 @@ export class ProductoService {
       throw new NotFoundException(
         `${this.ENTITY_NAME} con ID ${id} no encontrado.`,
       );
+
+    // Regla P1-73 (vive en la entidad Producto): se concilia costo/margen/precio
+    // contra el producto vigente ANTES de validar/persistir.
+    if (
+      dto.costo !== undefined ||
+      dto.porcentaje !== undefined ||
+      dto.precio !== undefined
+    ) {
+      productoActual.resolverCostoPrecioYMargen(
+        dto.costo,
+        dto.porcentaje,
+        dto.precio,
+      );
+      if (productoActual.costo !== undefined && productoActual.costo !== null) {
+        dto.costo = productoActual.costo;
+      }
+      if (
+        productoActual.porcentaje !== undefined &&
+        productoActual.porcentaje !== null
+      ) {
+        dto.porcentaje = productoActual.porcentaje;
+      }
+      if (
+        productoActual.precio !== undefined &&
+        productoActual.precio !== null
+      ) {
+        dto.precio = productoActual.precio;
+      }
+    }
 
     if (
       productoActual.lineaId == null ||

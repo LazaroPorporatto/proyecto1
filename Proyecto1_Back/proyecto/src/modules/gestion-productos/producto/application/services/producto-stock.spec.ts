@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { ProductoService } from './producto.service';
+import { Producto } from '../../domain/entities/producto.entity';
 import { MovimientoStock } from '../../domain/entities/movimiento-stock.entity';
 import { StockBajoEvent } from '../../domain/events/stock-bajo.event';
 import { StockActualizadoEvent } from '../../domain/events/stock-actualizado.event';
@@ -250,5 +251,164 @@ describe('ProductoService - Stock inicial al crear (alta de producto)', () => {
 
     expect(movimientoStockRepository.save).not.toHaveBeenCalled();
     expect(queryRunner.startTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProductoService - Regla Precio = Costo + Margen (P1-73) en alta y edicion', () => {
+  const queryRunner = {
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+    manager: { getRepository: jest.fn(() => ({ save: jest.fn() })) },
+  };
+  const dataSource = { createQueryRunner: jest.fn(() => queryRunner) } as any;
+  const movimientoStockRepository = {
+    save: jest.fn(),
+    findByProductoId: jest.fn(),
+  };
+
+  const validators = {
+    validarDatosBasicos: jest.fn(),
+    validarEntidadesRelacionadas: jest.fn(),
+    validarYObtenerEntidadesRelacionadas: jest
+      .fn()
+      .mockResolvedValue({ marca: {}, linea: {} }),
+    validarDenominacionUnica: jest.fn().mockResolvedValue(undefined),
+    validarCodigoProveedorUnico: jest.fn().mockResolvedValue(undefined),
+    validarUsuarioExiste: jest.fn().mockResolvedValue({}),
+  };
+
+  const crearServicio = (repo: any) =>
+    new ProductoService(
+      repo as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      { validarDatosBasicos: validators.validarDatosBasicos } as any,
+      { validarEntidadesRelacionadas: validators.validarEntidadesRelacionadas } as any,
+      {} as any,
+      {
+        validarYObtenerEntidadesRelacionadas:
+          validators.validarYObtenerEntidadesRelacionadas,
+      } as any,
+      {
+        validarDenominacionUnica: validators.validarDenominacionUnica,
+        validarCodigoProveedorUnico: validators.validarCodigoProveedorUnico,
+      } as any,
+      { validarUsuarioExiste: validators.validarUsuarioExiste } as any,
+      {} as any,
+      movimientoStockRepository as any,
+      {} as any,
+      dataSource as any,
+    );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('en alta: si viene el margen, deriva el precio antes de persistir', async () => {
+    const repository = { create: jest.fn().mockResolvedValue({ id: 1, denominacion: 'Test', stock: 0 }) };
+    const service = crearServicio(repository);
+
+    await service.create({
+      denominacion: 'Test',
+      costo: 1000,
+      porcentaje: 15,
+      cantidadPresentacion: 1,
+      usuarioCreatedId: 1,
+    } as any);
+
+    const dtoPersistido = repository.create.mock.calls[0][0];
+    expect(dtoPersistido.precio).toBe(1150);
+    expect(dtoPersistido.porcentaje).toBe(15);
+  });
+
+  it('en alta: sin margen, con solo precio, recalcula el margen implicito', async () => {
+    const repository = { create: jest.fn().mockResolvedValue({ id: 1, denominacion: 'Test', stock: 0 }) };
+    const service = crearServicio(repository);
+
+    await service.create({
+      denominacion: 'Test',
+      costo: 80,
+      precio: 100,
+      cantidadPresentacion: 1,
+      usuarioCreatedId: 1,
+    } as any);
+
+    const dtoPersistido = repository.create.mock.calls[0][0];
+    expect(dtoPersistido.precio).toBe(100);
+    expect(dtoPersistido.porcentaje).toBe(25);
+  });
+
+  it('en alta: rechaza si no se indica margen ni precio', async () => {
+    const repository = { create: jest.fn() };
+    const service = crearServicio(repository);
+
+    await expect(
+      service.create({
+        denominacion: 'Test',
+        costo: 1000,
+        cantidadPresentacion: 1,
+        usuarioCreatedId: 1,
+      } as any),
+    ).rejects.toThrow(
+      'Se debe indicar el margen (porcentaje) o el precio del producto.',
+    );
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it('en edicion: si cambia el margen, re-deriva el precio antes de persistir', async () => {
+    const repository = {
+      findOne: jest.fn().mockResolvedValue(
+        Object.assign(new Producto(), {
+          id: 1,
+          denominacion: 'Test',
+          costo: 1000,
+          porcentaje: 15,
+          precio: 1150,
+          lineaId: 1,
+          marcaId: 1,
+          alicuotaIva: 21,
+          cantidadPresentacion: 1,
+        }),
+      ),
+      update: jest.fn().mockResolvedValue({ id: 1, denominacion: 'Test' }),
+    };
+    const service = crearServicio(repository);
+
+    await service.update(1, { porcentaje: 25 } as any);
+
+    const dtoPersistido = repository.update.mock.calls[0][1];
+    expect(dtoPersistido.precio).toBe(1250);
+    expect(dtoPersistido.porcentaje).toBe(25);
+  });
+
+  it('en edicion: si cambia solo el precio, recalcula el margen implicito', async () => {
+    const repository = {
+      findOne: jest.fn().mockResolvedValue(
+        Object.assign(new Producto(), {
+          id: 1,
+          denominacion: 'Test',
+          costo: 1000,
+          porcentaje: 15,
+          precio: 1150,
+          lineaId: 1,
+          marcaId: 1,
+          alicuotaIva: 21,
+          cantidadPresentacion: 1,
+        }),
+      ),
+      update: jest.fn().mockResolvedValue({ id: 1, denominacion: 'Test' }),
+    };
+    const service = crearServicio(repository);
+
+    await service.update(1, { precio: 1250 } as any);
+
+    const dtoPersistido = repository.update.mock.calls[0][1];
+    expect(dtoPersistido.precio).toBe(1250);
+    expect(dtoPersistido.porcentaje).toBe(25);
   });
 });
