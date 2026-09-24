@@ -7,26 +7,29 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MarcaService } from '../services/marca.service';
 
-
-
 describe('MarcaController - Decorators', () => {
   let controller: MarcaController;
   let service: MarcaService;
 
   const mockService = {
+    findBy: jest.fn(),
     findByDenominacionFiltered: jest.fn(),
+    create: jest.fn(),
+    findDtoById: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   const mockJwtService = {
-    verify: jest.fn().mockReturnValue({ rolId: 1 }), // Simula el payload del token
+    verify: jest.fn().mockReturnValue({ rolId: 1 }),
   };
 
   const mockConfigService = {
-    get: jest.fn().mockReturnValue('secret'), // Simula el JWT_SECRET
+    get: jest.fn().mockReturnValue('secret'),
   };
 
   const mockReflector = {
-    getAllAndOverride: jest.fn().mockReturnValue(['Administrador']), // Simula los roles requeridos
+    getAllAndOverride: jest.fn().mockReturnValue(['Administrador']),
   };
 
   beforeEach(async () => {
@@ -52,8 +55,8 @@ describe('MarcaController - Decorators', () => {
         NormalizeDenominacionSearchPipe,
       ],
     })
-      .overrideGuard(AuthGuard) // Usa la clase directamente
-      .useValue({ canActivate: () => true }) // Mock del guard
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     controller = module.get<MarcaController>(MarcaController);
@@ -76,30 +79,30 @@ describe('MarcaController - Decorators', () => {
   it('debería llamar al servicio con los parámetros correctos', async () => {
     const dto = { denominacion: 'PRUEBA', skip: 0, take: 10 };
     const result = ['resultado simulado'];
-    mockService.findByDenominacionFiltered.mockResolvedValue(result);
+    mockService.findBy.mockResolvedValue(result);
 
     const response = await controller.findByDenominacionFiltered(dto);
 
-    expect(service.findByDenominacionFiltered).toHaveBeenCalledWith('PRUEBA', 0, 10);
+    expect(service.findBy).toHaveBeenCalledWith('PRUEBA', 0, 10, undefined);
     expect(response).toBe(result);
   });
 
   it('debería usar cadena vacía si denominacion no está definido', async () => {
-    const dto = { skip: 0, take: 10 }; // sin denominacion
+    const dto = { skip: 0, take: 10 };
     const result = [];
-    mockService.findByDenominacionFiltered.mockResolvedValue(result);
+    mockService.findBy.mockResolvedValue(result);
 
     const response = await controller.findByDenominacionFiltered(dto as any);
 
-    expect(service.findByDenominacionFiltered).toHaveBeenCalledWith('', 0, 10);
+    expect(service.findBy).toHaveBeenCalledWith('', 0, 10, undefined);
     expect(response).toBe(result);
   });
 
   it('debería propagar errores si el service falla', async () => {
-    mockService.findByDenominacionFiltered.mockRejectedValue(new Error('Fallo del service'));
+    mockService.findBy.mockRejectedValue(new Error('Fallo del service'));
 
-    await expect(
-      controller.findByDenominacionFiltered({ denominacion: 'algo', skip: 0, take: 10 }),
-    ).rejects.toThrow('Fallo del service');
+    await expect(controller.findByDenominacionFiltered({ skip: 0, take: 10 } as any)).rejects.toThrow(
+      'Fallo del service',
+    );
   });
 });

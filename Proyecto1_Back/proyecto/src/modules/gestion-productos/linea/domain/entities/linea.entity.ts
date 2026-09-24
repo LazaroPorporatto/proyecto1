@@ -30,13 +30,13 @@ export class Linea {
   productos: Producto[];
 
   @ManyToOne(() => SuperLinea, (superLinea) => superLinea.lineas, {
-    nullable: true,
+    nullable: false,
   })
   @JoinColumn({ name: 'super_linea_id' })
   superLinea: SuperLinea;
 
-  @Column({ name: 'super_linea_id', type: 'int', nullable: true })
-  superLineaId?: number;
+  @Column({ name: 'super_linea_id', type: 'int', nullable: false })
+  superLineaId: number;
  
   @Column('boolean', { default: false })
   utilizaStockMinimo: boolean;

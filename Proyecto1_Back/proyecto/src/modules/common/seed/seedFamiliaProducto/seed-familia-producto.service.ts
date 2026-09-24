@@ -111,7 +111,18 @@ export class SeedFamiliaProductoService {
 
     ];
 
-    const superLineaGeneral = await this.superLineaRepository.findOneBy({ denominacion: 'GENERAL' });
+    let superLineaGeneral = await this.superLineaRepository.findOneBy({ denominacion: 'GENERAL' });
+    if (!superLineaGeneral) {
+      superLineaGeneral = await this.superLineaRepository.save(
+        this.superLineaRepository.create({
+          denominacion: 'GENERAL',
+          sistema: 0,
+          usuarioCreatedId: 1,
+          utilizaStockMinimo: false,
+          stockMinimo: 0,
+        })
+      );
+    }
 
     for (const data of entryData) {
       const exists = await this.lineaRepository.findOneBy({
@@ -134,7 +145,7 @@ export class SeedFamiliaProductoService {
         const linea = this.lineaRepository.create({
           denominacion: data.denominacion.toUpperCase(),
           sistema: data.sistema,
-          superLineaId: superLineaGeneral ? superLineaGeneral.id : 1,
+          superLineaId: superLineaGeneral.id,
           usuarioCreatedId: usuarioCreated.id,
         } as DeepPartial<Linea>);
 
