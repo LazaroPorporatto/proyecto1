@@ -12,10 +12,9 @@ import SuperLineaService from "../../superlinea/services/superlinea-service";
 import { Linea } from "../../../../interfaces/gestion-producto/linea/interfaces-linea";
 import { Superlinea } from "../../../../interfaces/gestion-producto/superlinea/interfaces-superlinea";
 
-import { Layers } from "lucide-react";
+import { Layers, PlusCircle } from "lucide-react";
 import { parseApiError } from "../../../../utils/errores";
 import { ResponsePost } from "../../../../interfaces/generales/interfaces-generales";
-import CantidadesInput from "../../../herramientas/formateo-de-campos/cantidades-input";
 import { getUsuarioId } from "../../../../utils/auth";
 import EncabezadoFormularios from "../../../ui/encabezadoFormularios";
 import {
@@ -23,6 +22,7 @@ import {
   TituloAlertaConfirmacion,
   useConfirmation,
 } from "../../../herramientas/alertas/alertas-confirmacion";
+import RegistrarActualizarSuperLineaForm from "../../superlinea/utils/registrar-actualizar-superlinea";
 
 export default function RegistrarActualizarLineaForm({
   linea,
@@ -35,11 +35,11 @@ export default function RegistrarActualizarLineaForm({
 }) {
   const usuarioId = getUsuarioId();
   const { showConfirmation, AlertasConfirmacion } = useConfirmation();
-  const [rStockCritico, setStockCritico] = useState(false);
   const [superLineas, setSuperLineas] = useState<Superlinea[]>([]);
+  const [mostrarFormularioSuperLinea, setMostrarFormularioSuperLinea] = useState(false);
 
   const methods = useForm<FormValues>({
-    resolver: yupResolver(schema(rStockCritico)) as any,
+    resolver: yupResolver(schema(false)) as any,
     defaultValues: linea ? transformData(linea) : {},
   });
 
@@ -47,36 +47,28 @@ export default function RegistrarActualizarLineaForm({
     handleSubmit,
     formState: { isSubmitting, errors },
     setValue,
-    watch,
     setError,
     register,
   } = methods;
 
-  const stockMinimo = watch("stockMinimo");
-  const utilizaStockMinimo = watch("utilizaStockMinimo");
-
-  useEffect(() => {
-    if (!utilizaStockMinimo) {
-      setValue("stockMinimo", 0);
+  const fetchSuperLineas = async () => {
+    try {
+      const resSuperLineas = await SuperLineaService.obtener({ skip: 0, take: 100 });
+      setSuperLineas(resSuperLineas?.data || resSuperLineas || []);
+    } catch (error) {
+      console.error("Error al obtener las SuperLíneas:", error);
     }
-  }, [utilizaStockMinimo, setValue]);
-
-  useEffect(() => {
-    setStockCritico(utilizaStockMinimo || false);
-  }, [utilizaStockMinimo]);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resSuperLineas = await SuperLineaService.obtener({ skip: 0, take: 100 });
-        setSuperLineas(resSuperLineas?.data || resSuperLineas || []);
+        await fetchSuperLineas();
 
         if (linea) {
           setValue("denominacion", linea.denominacion || "");
           setValue("superLineaId", linea.superLinea?.id || (linea as any).superLineaId || linea.superlinea?.id || 0);
           setValue("observacion", linea.observacion || null);
-          setValue("stockMinimo", linea.stockMinimo || 0);
-          setValue("utilizaStockMinimo", linea.utilizaStockMinimo || false);
         }
       } catch (error) {
         console.error("Error al obtener los datos:", error);
@@ -136,17 +128,27 @@ export default function RegistrarActualizarLineaForm({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     SuperLínea <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    {...register("superLineaId", { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:text-white"
-                  >
-                    <option value="">Seleccione una SuperLínea...</option>
-                    {superLineas.map((sl) => (
-                      <option key={sl.id} value={sl.id}>
-                        {sl.denominacion}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2 items-center">
+                    <select
+                      {...register("superLineaId", { valueAsNumber: true })}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Seleccione una SuperLínea...</option>
+                      {superLineas.map((sl) => (
+                        <option key={sl.id} value={sl.id}>
+                          {sl.denominacion}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      onClick={() => setMostrarFormularioSuperLinea(true)}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center shrink-0"
+                      title="Agregar SuperLínea"
+                    >
+                      <PlusCircle className="w-5 h-5" />
+                    </Button>
+                  </div>
                   {errors.superLineaId && (
                     <p className="mt-1 text-xs text-red-600">{String(errors.superLineaId.message)}</p>
                   )}
@@ -154,23 +156,6 @@ export default function RegistrarActualizarLineaForm({
 
                 <div className="lg:col-span-2">
                   <FormInput name="observacion" label="Observación" placeholder="Ingresa una observación (opcional)" />
-                </div>
-
-                <div className="flex items-end gap-2 lg:col-span-2">
-                  <label className="flex items-center pb-2">
-                    <input
-                      type="checkbox"
-                      {...methods.register("utilizaStockMinimo")}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                  </label>
-                  <CantidadesInput
-                    name="stockMinimo"
-                    label="Stock Crítico"
-                    value={stockMinimo || 0}
-                    onChange={(value) => setValue("stockMinimo", Number(value))}
-                    disabled={utilizaStockMinimo ? false : true}
-                  />
                 </div>
               </CardContent>
               {errors.root?.message && (
@@ -187,8 +172,18 @@ export default function RegistrarActualizarLineaForm({
         </fieldset>
       </Card>
 
+      {mostrarFormularioSuperLinea && (
+        <RegistrarActualizarSuperLineaForm
+          onClose={() => setMostrarFormularioSuperLinea(false)}
+          onSuccess={() => {
+            setMostrarFormularioSuperLinea(false);
+            fetchSuperLineas();
+          }}
+        />
+      )}
 
       <AlertasConfirmacion />
     </div>
   );
 }
+

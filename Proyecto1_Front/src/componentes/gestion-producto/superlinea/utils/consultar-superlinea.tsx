@@ -117,9 +117,15 @@ export default function ConsultarSuperlinea() {
 
   const handleMostrarInfo = async (id: number) => {
     if (id) {
-      const datosAuditoria = await SuperLineaService.obtenerAuditoria(id);
-      setAuditoria(datosAuditoria);
-      setMostrarInfoAuditoria(true);
+      try {
+        const datosAuditoria = await SuperLineaService.obtenerAuditoria(id);
+        if (datosAuditoria) {
+          setAuditoria(datosAuditoria);
+          setMostrarInfoAuditoria(true);
+        }
+      } catch (error) {
+        console.error("Error al obtener auditoría de SuperLínea:", error);
+      }
     }
   };
 

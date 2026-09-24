@@ -1,10 +1,10 @@
-import { jwtDecode } from "jwt-decode";
 import { Auditoria } from "../../../interfaces/generales/interfaces-generales";
 import { Card } from "../../ui/Card";
 import { useEffect, useState } from "react";
 import UsuarioService from "../../gestion-usuario/usuario-service";
 import { Clock, Edit3, Info, Plus, Shield, Trash2, User } from "lucide-react";
 import { Badge } from "../../ui/Badge";
+import { getRoles } from "../../../utils/auth";
 
 interface InformacionAuditoriaProps {
   auditoria: Auditoria;
@@ -12,19 +12,20 @@ interface InformacionAuditoriaProps {
 }
 
 export default function InformacionAuditoria({ auditoria, onClose }: InformacionAuditoriaProps) {
-  const token = localStorage.getItem("Token");
-  const rolId = token ? jwtDecode<{ rolId: number }>(token).rolId : 0;
   const [rol, setRol] = useState<string>("");
 
   const fetchData = async () => {
     try {
-      const roleResponse = await UsuarioService.obtenerRol(rolId);
+      const roles = getRoles();
+      const rolId = roles.length > 0 ? roles[0] : 0;
+      if (!rolId) return;
 
-      const roleName = roleResponse?.data?.denominacion;
+      const roleResponse = await UsuarioService.obtenerRol(rolId);
+      const roleName = roleResponse?.data?.denominacion || roleResponse?.denominacion;
 
       setRol(roleName || "Desconocido");
     } catch (err: any) {
-      console.error("Error al obtener productos:", err);
+      console.error("Error al obtener rol:", err);
     }
   };
   useEffect(() => {
