@@ -13,7 +13,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img src={logo} alt="Proyecto 1" className="h-12 w-auto" />
-            <span className="text-xl font-bold tracking-wide">NOMBRE AQUI</span>
+            <span className="text-xl font-bold tracking-wide">Blasco. Kordek. Luque Trucco. Porporatto. Rubio Falcón</span>
              <p className="text-xs text-gray-300 leading-tight">{APP_CONFIG.nombreSistema} {APP_CONFIG.version}</p>
           </div>
           <nav className="hidden md:flex space-x-6 font-medium">

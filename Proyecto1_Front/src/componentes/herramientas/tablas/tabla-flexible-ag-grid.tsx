@@ -63,7 +63,7 @@ export function TablaAGGrid<T extends Record<string, any>>({
         //width: col.width,          // <-- ancho fijo (en píxeles)
         minWidth: col.minWidth, // <-- ancho mínimo
         maxWidth: col.maxWidth, // <-- ancho máximo
-        //tooltipField: col.accessor as string,
+        tooltipField: col.accessor as string,
         sortable: false,
         //filter: true,
 
@@ -247,6 +247,7 @@ export function TablaAGGrid<T extends Record<string, any>>({
           onGridReady={onGridReady}
           defaultColDef={{ resizable: false }}
           suppressMovableColumns={true}
+          enableBrowserTooltips={true}
         />
         {/* <button onClick={exportToCsv}>Exportar CSV</button>   {/* Exporta los datos a CSV o Excel */}
       

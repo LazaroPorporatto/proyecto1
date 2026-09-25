@@ -87,6 +87,7 @@ describe('CR-004: Búsqueda Avanzada de Productos por Denominación con Prefijo 
         utilizaStockMinimo: false,
         unidadPresentacion: 'UNIDAD',
         alicuotaIva: 21,
+        precio: 1500,
         usuarioCreatedId: 1,
       });
 
@@ -99,6 +100,7 @@ describe('CR-004: Búsqueda Avanzada de Productos por Denominación con Prefijo 
         utilizaStockMinimo: false,
         unidadPresentacion: 'UNIDAD',
         alicuotaIva: 21,
+        precio: 1600,
         usuarioCreatedId: 1,
       });
 
@@ -111,6 +113,7 @@ describe('CR-004: Búsqueda Avanzada de Productos por Denominación con Prefijo 
         utilizaStockMinimo: false,
         unidadPresentacion: 'UNIDAD',
         alicuotaIva: 21,
+        precio: 1700,
         usuarioCreatedId: 1,
       });
   });
