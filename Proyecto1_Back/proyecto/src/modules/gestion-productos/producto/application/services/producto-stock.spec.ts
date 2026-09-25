@@ -39,6 +39,7 @@ describe('ProductoService - MovimientoStock y eventos de stock (P1-30 / P1-31)',
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
       movimientoStockRepository as any,
       eventPublisher as any,
     );
@@ -180,6 +181,7 @@ describe('ProductoService - Stock inicial al crear (alta de producto)', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
       { validarDatosBasicos: jest.fn() } as any,
       { validarEntidadesRelacionadas: jest.fn() } as any,
       {} as any,
@@ -283,6 +285,7 @@ describe('ProductoService - Regla Precio = Costo + Margen (P1-73) en alta y edic
   const crearServicio = (repo: any) =>
     new ProductoService(
       repo as any,
+      {} as any,
       {} as any,
       {} as any,
       {} as any,

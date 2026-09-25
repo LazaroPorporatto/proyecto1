@@ -27,6 +27,7 @@ describe('ProductoService', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
     );
   });
 

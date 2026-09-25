@@ -8,7 +8,6 @@ import {
   MaxLength,
   Matches,
   IsNumber,
-  IsOptional,
   IsPositive,
 } from 'class-validator';
 import { Transform } from 'class-transformer';

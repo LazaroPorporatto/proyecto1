@@ -22,6 +22,7 @@ describe('CR-002 - POST /api/producto (e2e)', () => {
     marcaId: 1,
     alicuotaIva: 21,
     usuarioCreatedId: 1,
+    precio: 8500,
   });
 
   beforeAll(async () => {

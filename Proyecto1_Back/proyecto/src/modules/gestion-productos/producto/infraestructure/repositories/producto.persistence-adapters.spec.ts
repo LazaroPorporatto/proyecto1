@@ -65,6 +65,7 @@ describe('ProductoPersistenceAdapter - CR-007', () => {
       } as UpdateProductoDto,
       linea,
       marca,
+      null,
       usuario,
     );
 
@@ -101,6 +102,7 @@ describe('ProductoPersistenceAdapter - CR-007', () => {
           } as UpdateProductoDto,
           linea,
           marca,
+          null,
           usuario,
         ),
       ).rejects.toBeInstanceOf(BadRequestException);
@@ -126,6 +128,7 @@ describe('ProductoPersistenceAdapter - CR-007', () => {
         } as UpdateProductoDto,
         linea,
         marca,
+        null,
         usuario,
       ),
     ).rejects.toThrow('El motivo del cambio de precio es obligatorio.');
@@ -147,6 +150,7 @@ describe('ProductoPersistenceAdapter - CR-007', () => {
       } as UpdateProductoDto,
       linea,
       marca,
+      null,
       usuario,
     );
 
