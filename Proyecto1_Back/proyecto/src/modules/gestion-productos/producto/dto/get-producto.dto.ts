@@ -128,7 +128,7 @@ export class GetProductoDto {
     enum: UnidadPresentacion,
     enumName: 'UnidadPresentacion',
     description: 'Unidad de presentación del producto',
-    example: UnidadPresentacion.PACK,
+    example: UnidadPresentacion.CAJA,
   })
   @IsEnum(UnidadPresentacion)
   unidadPresentacion: UnidadPresentacion;

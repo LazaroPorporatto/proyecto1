@@ -12,6 +12,7 @@ import { EntityNotFoundException } from 'src/modules/common/exceptions/entity-no
 import { IUnitOfWork } from 'src/modules/common/unit-of-work/iunit-of-work.';
 import { Linea } from 'src/modules/gestion-productos/linea/domain/entities/linea.entity';
 import { Marca } from 'src/modules/gestion-productos/marca/domain/entities/marca.entity';
+import { Presentacion } from 'src/modules/gestion-productos/presentacion/domain/entities/presentacion.entity';
 import { Usuario } from 'src/modules/gestion-usuario/usuario/domain/entities/usuario.entity';
 import { Repository, IsNull, DataSource } from 'typeorm';
 import { Producto } from '../../domain/entities/producto.entity';
@@ -42,6 +43,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
     data: CreateProductoDto,
     linea: Linea,
     marca: Marca,
+    presentacion: Presentacion | null,
     usuario: Usuario,
   ): Promise<Producto> {
     const repo = this.uow.getRepository(Producto);
@@ -59,6 +61,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
         ...data,
         linea,
         marca,
+        presentacion: presentacion ?? undefined,
         usuarioCreated: usuario,
       });
 
@@ -88,6 +91,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
         .leftJoinAndSelect('producto.linea', 'linea')
         .leftJoinAndSelect('linea.superLinea', 'superLinea')
         .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.presentacion', 'presentacion')
         .where('producto.id = :id', { id })
         .andWhere('producto.deletedAt IS NULL')
         .getOne();
@@ -168,7 +172,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
     data: UpdateProductoDto,
     linea: Linea,
     marca: Marca,
-
+    presentacion: Presentacion | null,
     usuario: Usuario,
   ): Promise<Producto> {
     const repo = this.uow.getRepository(Producto);
@@ -201,6 +205,7 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
       Object.assign(entity, dataSinItems, {
         linea,
         marca,
+        presentacion: presentacion ?? undefined,
       });
 
       entity.usuarioUpdated = usuario; 
@@ -530,6 +535,17 @@ export class ProductoPersistenceAdapter implements IProductoRepository {
     const count = await this.repository
       .createQueryBuilder('producto')
       .where('producto.linea_id = :lineaId', { lineaId })
+      .andWhere('producto.deletedAt IS NULL')
+      .limit(1) // opcional, para optimizar
+      .getCount();
+
+    return count > 0;
+  }
+
+  async existsProductosActivosByPresentacion(presentacionId: number): Promise<boolean> {
+    const count = await this.repository
+      .createQueryBuilder('producto')
+      .where('producto.presentacion_id = :presentacionId', { presentacionId })
       .andWhere('producto.deletedAt IS NULL')
       .limit(1) // opcional, para optimizar
       .getCount();

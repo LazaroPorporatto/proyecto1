@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LineaModule } from './modules/gestion-productos/linea/linea.module';
 import { ProductoModule } from './modules/gestion-productos/producto/producto.module';
 import { CambioPreciosModule } from './modules/gestion-productos/cambio-precios/cambio-precios.module';
+import { PresentacionModule } from './modules/gestion-productos/presentacion/presentacion.module';
 import { ConfigModule } from '@nestjs/config';
 import { ProveedorModule } from './modules/organizacion/proveedor/proveedor.module';
 import { PersonalModule } from './modules/organizacion/personal/personal.module';
@@ -60,6 +61,7 @@ import { SuperLineaModule } from './modules/gestion-productos/superlinea/superli
     LineaModule,
     ProductoModule,
     CambioPreciosModule,
+    PresentacionModule,
     CondicionIvaModule,
     LocalidadModule,
     ProvinciaModule,

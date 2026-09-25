@@ -3,6 +3,7 @@ import { CreateProductoDto } from './create-producto.dto';
 import {
   IsNotEmpty,
   IsInt,
+  IsOptional,
   IsString,
   MaxLength,
   Matches,
@@ -26,6 +27,10 @@ export class UpdateProductoDto extends PartialType(CreateProductoDto) {
   @IsNotEmpty({ message: 'El usuarioUpdatedId es obligatorio.' })
   @IsInt({ message: 'El usuarioUpdatedId debe ser un número entero.' })
   usuarioUpdatedId: number;
+
+  @IsOptional()
+  @IsInt({ message: 'La presentación debe ser un número entero.' })
+  presentacionId?: number;
 
   updatedAt: Date;
 

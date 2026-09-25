@@ -1,5 +1,6 @@
 import { Linea } from '../../../linea/domain/entities/linea.entity';
 import { Marca } from '../../../marca/domain/entities/marca.entity';
+import { Presentacion } from '../../../presentacion/domain/entities/presentacion.entity';
 import { CreateProductoDto } from '../../dto/create-producto.dto';
 import { Producto } from '../entities/producto.entity';
 import { UpdateProductoDto } from '../../dto/update-producto.dto';
@@ -14,6 +15,7 @@ export interface IProductoRepository {
     data: CreateProductoDto,
     linea: Linea,
     marca: Marca,
+    presentacion: Presentacion | null,
     usuario: Usuario,
   ): Promise<Producto>;
 
@@ -50,6 +52,7 @@ export interface IProductoRepository {
     data: UpdateProductoDto,
     linea: Linea,
     marca: Marca,
+    presentacion: Presentacion | null,
     usuario: Usuario,
   ): Promise<Producto>;
 
@@ -85,6 +88,7 @@ export interface IProductoRepository {
   existsByCodigoProveedor(codigoProveedor: string, excludeId: number): Promise<boolean>;
   existsProductosActivosByMarca(marcaId: number): Promise<boolean>;
   existsProductosActivosByLinea(lineaId: number): Promise<boolean>;
+  existsProductosActivosByPresentacion(presentacionId: number): Promise<boolean>;
 
   findByIds(ids: number[]): Promise<Producto[]>;
 }
