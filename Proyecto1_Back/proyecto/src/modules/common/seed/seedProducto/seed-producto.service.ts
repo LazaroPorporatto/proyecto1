@@ -136,6 +136,8 @@ export class SeedProductoService {
         denominacion: data.denominacion,
         linea,
         marca,
+        lineaId: linea.id,
+        marcaId: marca.id,
         usuarioCreated,
         costo: data.costo,
         porcentaje: data.porcentaje,

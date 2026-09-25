@@ -91,6 +91,8 @@ export async function login(
 
 export async function borrarProductos(pool: Pool, ids: number[]): Promise<void> {
   for (const id of ids) {
+    await pool.execute('DELETE FROM historial_precio WHERE producto_id = ?', [id]);
+    await pool.execute('DELETE FROM producto_operacion WHERE productoId = ?', [id]);
     await pool.execute('DELETE FROM producto WHERE id = ?', [id]);
   }
 }

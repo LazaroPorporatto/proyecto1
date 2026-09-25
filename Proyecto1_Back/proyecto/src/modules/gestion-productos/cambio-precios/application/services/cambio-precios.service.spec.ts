@@ -22,7 +22,14 @@ describe('CambioPreciosService (US-006: ajuste masivo de precios)', () => {
       Promise.resolve(entity),
     );
     const manager = {
-      getRepository: jest.fn().mockReturnValue({ save: saveMock }),
+      getRepository: jest
+        .fn()
+        .mockReturnValue({
+          save: saveMock,
+          create: jest.fn().mockImplementation((entity) =>
+            Promise.resolve(entity),
+          ),
+        }),
     } as unknown as EntityManager;
 
     const queryRunner = {

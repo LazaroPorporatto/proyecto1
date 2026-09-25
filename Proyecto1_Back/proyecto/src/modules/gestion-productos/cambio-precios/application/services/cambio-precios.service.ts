@@ -15,6 +15,7 @@ import { ProductoCambioPrecioDto } from '../../dto/producto-cambio-precio.dto';
 import { BuscarProductosCambioPrecioDto } from '../../dto/buscar-productos-cambio-precio.dto';
 import { AplicarCambiosPrecioDto } from '../../dto/aplicar-cambios-precio.dto';
 import { GuardarCambiosPrecioDto } from '../../dto/guardar-cambios-precio.dto';
+import { HistorialPrecio } from '../../../producto/domain/entities/historial-precio.entity';
 
 @Injectable()
 export class CambioPreciosService {
@@ -145,6 +146,19 @@ export class CambioPreciosService {
         producto.usuarioUpdated = usuario;
 
         await this.productoRepository.updateEntity(uow, producto);
+
+        const historialRepository = uow.getRepository(HistorialPrecio);
+        await historialRepository.save(
+          historialRepository.create({
+            productoId: producto.id,
+            producto,
+            precioAnterior,
+            precioNuevo: producto.precio ?? 0,
+            motivo: dto.motivo,
+            usuarioId: usuario.id,
+            usuario,
+          }),
+        );
 
         historial.push({
           productoId: producto.id,

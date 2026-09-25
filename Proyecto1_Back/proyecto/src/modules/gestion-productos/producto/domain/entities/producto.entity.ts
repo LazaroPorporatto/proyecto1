@@ -287,6 +287,9 @@ export class Producto {
     this.precio = Producto.calcularPrecioDesdeCostoYMargen(costo, margen);
   }
 
+  /** Tope del margen: alineado con la columna `porcentaje` = decimal(5,2) (max 999.99). */
+  static readonly MAX_PORCENTAJE = 999.99;
+
   /**
    * Concilia costo, margen y precio al guardar (alta o edicion) para que la regla
    * P1-73 quede SIEMPRE coherente, sin depender de lo que envie el cliente:
@@ -330,6 +333,11 @@ export class Producto {
 
     if (cambiaMargen) {
       // Regla P1-73: el margen es la fuente y el precio se deriva.
+      if (porcentaje! > Producto.MAX_PORCENTAJE) {
+        throw new BadRequestException(
+          `El margen (${porcentaje}%) supera el m\u00e1ximo permitido (${Producto.MAX_PORCENTAJE}%).`,
+        );
+      }
       this.costo = costo ?? costoActual;
       this.porcentaje = porcentaje!;
       this.precio = Producto.calcularPrecioDesdeCostoYMargen(this.costo, this.porcentaje);
@@ -348,6 +356,11 @@ export class Producto {
       if (costo !== undefined) this.costo = costo;
       this.precio = redondear(precio!, 2);
       this.porcentaje = Producto.calcularMargenImplicito(this.costo ?? 0, this.precio);
+      if (this.porcentaje > Producto.MAX_PORCENTAJE) {
+        throw new BadRequestException(
+          `El margen resultante (${this.porcentaje}%) supera el m\u00e1ximo permitido (${Producto.MAX_PORCENTAJE}%).`,
+        );
+      }
       return;
     }
 
