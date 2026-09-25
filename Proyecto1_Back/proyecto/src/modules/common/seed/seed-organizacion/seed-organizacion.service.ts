@@ -191,9 +191,13 @@ No se les ocurra sacar primero a bell ville
         continue;
       }
 
+      // Ojo: el filtro por la relación tiene que ir por provinciaId. Pasar la
+      // entidad (provincia: provincia) no arma la comparación contra
+      // provincia_id, así que el chequeo nunca encontraba la localidad y cada
+      // corrida la insertaba de nuevo.
       const exists = await this.localidadRepository.findOneBy({
         denominacion: data.localidad,
-        provincia: provincia,
+        provinciaId: provincia.id,
       });
 
       if (!exists) {
@@ -404,6 +408,21 @@ No se les ocurra sacar primero a bell ville
         continue;
       }
 
+      // Sin este chequeo el seed duplicaba el cliente en cada corrida.
+      // Ojo: condicionIvaId es una propiedad suelta sin decorador @Column en la
+      // entidad Cliente, por eso el filtro tiene que ir por la relación.
+      const existeCliente = await this.clienteRepository.findOne({
+        where: {
+          denominacion: data.denominacion.toUpperCase(),
+          condicionIva: { id: categoriaIva.id },
+        },
+      });
+
+      if (existeCliente) {
+        console.log(`⚠️ Cliente "${data.denominacion}" ya existe.`);
+        continue;
+      }
+
       const localidad = await this.localidadRepository.findOneBy({
         denominacion: data.localidad,
       });
@@ -439,11 +458,17 @@ No se les ocurra sacar primero a bell ville
         id: 2,
       });
       if (!empresa) {
-        throw new Error('Empresa no encontrada');
+        console.log(
+          `⚠️ No se encontró la empresa 1. Ejecutá primero el seed de empresa.`,
+        );
+        continue;
       }
 
       if (!empresa2) {
-        throw new Error('Empresa respaldo no encontrada');
+        console.log(
+          `⚠️ No se encontró la empresa de respaldo. Ejecutá primero el seed de empresa.`,
+        );
+        continue;
       }
 
 
@@ -539,33 +564,87 @@ async seedPersonal() {
   ];
 
   for (const data of entryData) {
-    // 1. verificar si ya existe personal
-    const existsPersonal = await this.personalRepository.findOne({
-      where: { mail: data.mail },
-      relations: ['usuario'],
-    });
-
-    if (existsPersonal) {
-      console.log(`⚠️ Personal "${data.mail}" ya existe.`);
-      continue;
-    }
-
-    // 2. buscar roles
+    // 1. buscar roles
     const roles = await this.rolRepository.findBy({
       denominacion: In(data.roles),
     });
 
     if (roles.length !== data.roles.length) {
       const faltantes = data.roles.filter(
-        r => !roles.some(rol => rol.denominacion === r)
+        (r) => !roles.some((rol) => rol.denominacion === r)
       );
       console.log(`❌ Roles no encontrados: ${faltantes.join(', ')}`);
       continue;
     }
 
-    
+    // 2. verificar el estado real. OJO: el mail puede existir en Personal, en
+    // Usuario o en ambos. seedUsuario crea usuarios sin Personal, asi que
+    // mirar solo Personal no alcanza y el INSERT del Usuario reventaba con
+    // ER_DUP_ENTRY sobre el indice unico de usuario.mail.
+    const [existePersonal, existeUsuario] = await Promise.all([
+      this.personalRepository.findOne({
+        where: { mail: data.mail },
+        relations: ['usuario'],
+      }),
+      this.usuarioRepository.findOneBy({ mail: data.mail }),
+    ]);
 
-    //  crear domicilio vacío
+    if (existePersonal && existeUsuario) {
+      console.log(`⚠️ Personal y usuario "${data.denominacion}" ya existen.`);
+      continue;
+    }
+
+    if (existePersonal && !existeUsuario) {
+      // Estado huerfano: el Personal quedo guardado pero el Usuario no (lo
+      // dejaba el bug anterior). Se completa en vez de saltear.
+      const usuario = this.usuarioRepository.create({
+        mail: data.mail,
+        contrasena: await bcrypt.hash(data.contrasena, 10),
+        denominacion: data.denominacion,
+        personal: existePersonal,
+        personalId: existePersonal.id,
+        roles: roles,
+        activo: true,
+      });
+
+      await this.usuarioRepository.save(usuario);
+      existePersonal.usuario = usuario;
+      await this.personalRepository.save(existePersonal);
+      console.log(
+        `✅ Usuario "${data.denominacion}" recuperado sobre el personal existente.`,
+      );
+      continue;
+    }
+
+    if (!existePersonal && existeUsuario) {
+      // El Usuario ya lo creo seedUsuario: se le crea y asocia su Personal.
+      const personal = await this.personalRepository.save(
+        this.personalRepository.create({
+          denominacion: data.denominacion.toUpperCase(),
+          mail: data.mail,
+          sistema: data.sistema,
+          esVendedor: data.esVendedor,
+          domicilio: new Domicilio(),
+        }),
+      );
+
+      existeUsuario.personal = personal;
+      existeUsuario.personalId = personal.id;
+      await this.usuarioRepository.save(existeUsuario);
+
+      // La relacion es bidireccional: si solo se setea del lado del usuario,
+      // personal.usuario_id queda en NULL y elPersonal queda huerfano.
+      personal.usuario = existeUsuario;
+      personal.usuarioId = existeUsuario.id;
+      await this.personalRepository.save(personal);
+
+      console.log(
+        `✅ Personal "${data.denominacion}" asociado al usuario existente.`,
+      );
+      continue;
+    }
+
+    // 3. ni Personal ni Usuario: se crean ambos
     const domicilio = new Domicilio();
 
     const personal = this.personalRepository.create({
@@ -635,6 +714,17 @@ async seedPersonal() {
         continue;
       }
 
+      // El cuit es la clave natural del proveedor. Sin este chequeo el seed
+      // duplicaba los proveedores en cada corrida.
+      const existeProveedor = await this.proveedorRepository.findOneBy({
+        cuit: data.cuit,
+      });
+
+      if (existeProveedor) {
+        console.log(`⚠️ Proveedor "${data.denominacion}" ya existe.`);
+        continue;
+      }
+
       const localidad = await this.localidadRepository.findOneBy({
         denominacion: data.localidad,
       });
@@ -653,14 +743,20 @@ async seedPersonal() {
         continue; // Evita crear la línea sin superlínea
       }
 
-      let empresa1 = await this.empresaRepository.findOneBy({ id: 1 });
+      const empresa1 = await this.empresaRepository.findOneBy({ id: 1 });
 
-      let empresa2 = await this.empresaRepository.findOneBy({ id: 2 });
+      const empresa2 = await this.empresaRepository.findOneBy({ id: 2 });
       if (!empresa1) {
-        throw new Error('Empresa no encontrada');
+        console.log(
+          `⚠️ No se encontró la empresa 1. Ejecutá primero el seed de empresa.`,
+        );
+        continue;
       }
       if (!empresa2) {
-        throw new Error('Empresa respaldo no encontrada');
+        console.log(
+          `⚠️ No se encontró la empresa de respaldo. Ejecutá primero el seed de empresa.`,
+        );
+        continue;
       }
  
     
@@ -742,7 +838,11 @@ async seedPersonal() {
     ];
 
     for (const data of entryData) {
-      const exists = await this.condicionIVARepository.findOneBy({
+      // Ojo: la existencia se verifica sobre alicuota_iva, no sobre
+      // condicion_iva. Con condicion_iva el chequeo nunca encuentra nada y
+      // cada corrida intentaba insertar de nuevo, chocando con el indice
+      // unico de alicuota_iva.codigoAfip.
+      const exists = await this.alicuotaIvaRepository.findOneBy({
         denominacion: data.denominacion,
       });
 
@@ -755,7 +855,7 @@ async seedPersonal() {
           console.log(
             `⚠️ No se encontró el usuario "${data.usuarioCreatedId}".`,
           );
-          continue; // Evita crear la línea sin superlínea
+          continue;
         }
 
         const dataGuardada = this.alicuotaIvaRepository.create({

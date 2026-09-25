@@ -23,11 +23,14 @@ import { CondicionIva } from 'src/modules/gutil/condicion-iva/domain/entities/co
 import { Proveedor } from 'src/modules/organizacion/proveedor/domain/entities/proveedor.entity';
 import { AlicuotaIva } from 'src/modules/gutil/alicuota-iva/domain/entities/alicuota-iva.entity';
 import { SuperLinea } from 'src/modules/gestion-productos/superlinea/domain/entities/super-linea.entity';
+import { Presentacion } from 'src/modules/gestion-productos/presentacion/domain/entities/presentacion.entity';
+import { SeedPresentacionService } from '../seed-presentacion/seed-presentacion.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       SuperLinea,
+      Presentacion,
       Provincia,
       CondicionIva,
       Localidad, 
@@ -53,6 +56,7 @@ import { SuperLinea } from 'src/modules/gestion-productos/superlinea/domain/enti
     SeedUsuarioService,
     SeedOrganizacionService,
     SeedFamiliaProductoService,
+    SeedPresentacionService,
     SeedProductoService,
 
   ],
