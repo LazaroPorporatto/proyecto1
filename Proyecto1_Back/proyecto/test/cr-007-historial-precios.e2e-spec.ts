@@ -55,7 +55,7 @@ describe('CR-007 Historial de precios (e2e)', () => {
     expect(registro.body).toBeTruthy();
 
     // El alta de usuario no persiste la relacion con el rol, por lo que se
-    // asigna explicitamente para poder exercising el AuthGuard y los @Roles.
+    // asigna explicitamente para poder ejercitar el AuthGuard y los @Roles.
     const dataSource = app.get(DataSource);
     const usuarios: any[] = await dataSource.query(
       'SELECT id FROM usuario WHERE mail = ?',
