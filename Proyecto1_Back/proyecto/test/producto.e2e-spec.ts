@@ -20,6 +20,7 @@ describe('CR-002 - POST /api/producto (e2e)', () => {
     cantidadPresentacion: 1.5,
     lineaId: 1,
     marcaId: 1,
+    presentacionId: 1,
     alicuotaIva: 21,
     usuarioCreatedId: 1,
     precio: 8500,

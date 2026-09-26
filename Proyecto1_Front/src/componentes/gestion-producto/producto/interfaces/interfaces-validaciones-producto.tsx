@@ -112,7 +112,11 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack?: boolean, usaOf
     .typeError("La sublinea es obligatoria.")
     .optional()
     .nullable(), */
-    presentacionId: yup.number().optional().nullable(),
+    presentacionId: yup
+      .number()
+      .typeError("Debe seleccionar una presentación.")
+      .required("La presentación es obligatoria.")
+      .positive("Debe seleccionar una presentación válida."),
     stockMinimo: yup.number().when([], {
       is: () => utilizaStockMinimo,
       then: (schema) => schema.required("El Stock minimo es obligatorio.").moreThan(0, "El stock minimo debe ser mayor a 0."),
@@ -121,12 +125,13 @@ export const schema = (utilizaStockMinimo: boolean, utilizaPack?: boolean, usaOf
     unidadPresentacion: yup
       .string()
       .oneOf(Object.values(UnidadPresentacion), "Unidad de presentación inválida.")
-      .required("La unidad de presentación es obligatoria."),
+      .optional()
+      .nullable(),
     cantidadPresentacion: yup
       .number()
       .typeError("La cantidad de presentación debe ser un valor numérico.")
-      .required("La cantidad de presentación es obligatoria.")
-      .moreThan(0, "La cantidad de presentación debe ser mayor a 0."),
+      .optional()
+      .nullable(),
     utilizaStockMinimo: yup.boolean().optional(),
   });
 

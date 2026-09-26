@@ -165,11 +165,24 @@ export class ProductoService {
     const marca = await this.marcaService.findEntityById(dto.marcaId);
     const linea = await this.lineaService.findEntityById(dto.lineaId);
 
+    let presentacionDenominacion: string | undefined = undefined;
+    if (dto.presentacionId) {
+      try {
+        const pres = await this.presentacionService.findEntityById(dto.presentacionId);
+        if (pres) {
+          presentacionDenominacion = pres.denominacion;
+        }
+      } catch (error) {
+        // Fallback a campos tradicionales si no se encuentra la entidad
+      }
+    }
+
     const denominacion = this.denominacionService.generarDenominacionSugerida(
       marca.denominacion,
       linea.denominacion,
       dto.unidadPresentacion,
       dto.cantidadPresentacion,
+      presentacionDenominacion,
     );
 
     return { denominacion };

@@ -78,5 +78,17 @@ describe('ProductoDenominacionService', () => {
 
       expect(resultado).toBe('Gaseosas');
     });
+
+    it('utiliza presentacionDenominacion explícita si se proporciona', () => {
+      const resultado = service.generarDenominacionSugerida(
+        'Coca-Cola',
+        'Gaseosas',
+        undefined,
+        undefined,
+        'BOTELLA 1.5L',
+      );
+
+      expect(resultado).toBe('Coca-Cola Gaseosas BOTELLA 1.5L');
+    });
   });
 });

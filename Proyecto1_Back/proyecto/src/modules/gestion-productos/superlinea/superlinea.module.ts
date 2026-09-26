@@ -10,15 +10,19 @@ import { TypeOrmUnitOfWork } from 'src/modules/common/unit-of-work/type-orm-unit
 import { UsuarioModule } from 'src/modules/gestion-usuario/usuario/usuario.module';
 import { SuperLineaController } from './application/controllers/super-linea.controller';
 import { SuperLineaService } from './application/services/super-linea.service';
+import { LineaModule } from '../linea/linea.module';
+import { PoliticaEliminacionSuperLinea } from './domain/services/politica-eliminacion-super-linea.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SuperLinea]),
     UsuarioModule,
+    forwardRef(() => LineaModule),
   ],
   controllers: [SuperLineaController],
   providers: [
     SuperLineaService,
+    PoliticaEliminacionSuperLinea,
     {
       provide: 'ISuperLineaRepository',
       useClass: SuperLineaRepository,
@@ -36,6 +40,7 @@ import { SuperLineaService } from './application/services/super-linea.service';
   exports: [
     TypeOrmModule,
     SuperLineaService,
+    PoliticaEliminacionSuperLinea,
     SuperLineaPersistenceAdapter,
     'ISuperLineaRepository',
   ],

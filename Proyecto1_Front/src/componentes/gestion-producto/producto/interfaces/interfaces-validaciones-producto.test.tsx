@@ -9,6 +9,7 @@ describe('CR-002: validación de Presentación (schema de Yup)', () => {
     precio: 1050,
     marcaId: 1,
     lineaId: 1,
+    presentacionId: 1,
     alicuotaIva: 21,
   };
 

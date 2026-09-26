@@ -11,21 +11,24 @@ export class ProductoDenominacionService {
   generarDenominacionSugerida(
     marcaDenominacion: string,
     lineaDenominacion: string,
-    unidadPresentacion: UnidadPresentacion,
-    cantidadPresentacion: number,
+    unidadPresentacion?: UnidadPresentacion,
+    cantidadPresentacion?: number,
+    presentacionDenominacion?: string,
   ): string {
     const partes = [marcaDenominacion?.trim(), lineaDenominacion?.trim()].filter(
       (parte) => !!parte,
     );
 
-    const esPresentacionPorDefecto =
-      unidadPresentacion === UnidadPresentacion.UNIDAD && cantidadPresentacion === 1;
+    if (presentacionDenominacion && presentacionDenominacion.trim() !== '') {
+      partes.push(presentacionDenominacion.trim());
+    } else if (unidadPresentacion && cantidadPresentacion !== undefined) {
+      const esPresentacionPorDefecto =
+        unidadPresentacion === UnidadPresentacion.UNIDAD && cantidadPresentacion === 1;
 
-    if (!esPresentacionPorDefecto) {
-      const cantidadFormateada = Number.isInteger(cantidadPresentacion)
-        ? String(cantidadPresentacion)
-        : String(cantidadPresentacion);
-      partes.push(`${cantidadFormateada}${unidadPresentacion}`);
+      if (!esPresentacionPorDefecto) {
+        const cantidadFormateada = String(cantidadPresentacion);
+        partes.push(`${cantidadFormateada}${unidadPresentacion}`);
+      }
     }
 
     return partes.join(' ');

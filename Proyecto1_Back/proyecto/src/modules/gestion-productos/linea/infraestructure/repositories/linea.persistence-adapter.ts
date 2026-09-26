@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DatabaseConnectionException } from 'src/modules/common/exceptions/database-connection.exception';
 import { EntityNotFoundException } from 'src/modules/common/exceptions/entity-notFound-exceptions';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { CreateLineaDto } from '../../dto/create-linea.dto';
 import { Linea } from '../../domain/entities/linea.entity';
 import { ILineaRepository } from '../../domain/interfaces/linea.repository.interface';
@@ -49,7 +49,7 @@ export class LineaPersistenceAdapter
       // Creamos la entidad
       const nuevaEntity = repo.create({
         denominacion: data.denominacion,
-        utilizaStockMinimo: data.utilizaStockMinimo,
+        utilizaStockMinimo: data.utilizaStockMinimo ?? false,
         stockMinimo: data.stockMinimo,
         usuarioCreatedId: data.usuarioCreatedId,
         observacion: data.observacion,
@@ -84,7 +84,7 @@ export class LineaPersistenceAdapter
 
     // Actualizar datos simples
     entity.denominacion = data.denominacion ?? entity.denominacion;
-    entity.utilizaStockMinimo = data.utilizaStockMinimo;
+    entity.utilizaStockMinimo = data.utilizaStockMinimo ?? entity.utilizaStockMinimo;
     entity.stockMinimo = data.stockMinimo ?? 0;
     if (data.superLineaId) {
       entity.superLineaId = data.superLineaId;
@@ -311,5 +311,15 @@ export class LineaPersistenceAdapter
         'Error al conectar con la base de datos.',
       );
     }
+  }
+
+  async existsLineasActivasBySuperLinea(superLineaId: number): Promise<boolean> {
+    const count = await this.repository.count({
+      where: {
+        superLineaId,
+        deletedAt: IsNull(),
+      },
+    });
+    return count > 0;
   }
 }

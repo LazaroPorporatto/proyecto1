@@ -25,8 +25,10 @@ export class CreateLineaDto {
   @IsInt()
   stockMinimo?: number;
 
+  // DEUDA TÉCNICA: utilizaStockMinimo es opcional en la creación de Línea desde el frontend de Producto
+  @IsOptional()
   @IsBoolean()
-  utilizaStockMinimo: boolean;
+  utilizaStockMinimo?: boolean;
 
   @IsOptional()
   @IsString()

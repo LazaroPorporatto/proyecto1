@@ -101,9 +101,9 @@ export class CreateProductoDto {
   marcaId: number;
 
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'La presentación es obligatoria.' })
   @IsInt({ message: 'La presentación debe ser un número entero.' })
-  presentacionId?: number;
+  presentacionId: number;
 
 
   @IsOptional()

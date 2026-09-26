@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  forwardRef,
   Inject,
   Injectable,
   Logger,
@@ -15,6 +16,7 @@ import { UpdateSuperLineaDto } from '../../dto/update-super-linea.dto';
 import { SuperLineaDto } from '../../dto/super-linea.dto';
 import { SuperLineaMapper } from '../../mappers/super-linea.mapper';
 import { SuperLinea } from '../../domain/entities/super-linea.entity';
+import { PoliticaEliminacionSuperLinea } from '../../domain/services/politica-eliminacion-super-linea.service';
 
 @Injectable()
 export class SuperLineaService {
@@ -23,6 +25,8 @@ export class SuperLineaService {
   constructor(
     @Inject('ISuperLineaRepository')
     private readonly repository: ISuperLineaRepository,
+    @Inject(forwardRef(() => PoliticaEliminacionSuperLinea))
+    private readonly validacionesService: PoliticaEliminacionSuperLinea,
     private readonly usuarioService: UsuarioService,
   ) {}
 
@@ -124,6 +128,15 @@ export class SuperLineaService {
     const usuario = await this.usuarioService.findOne(usuarioId);
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado.`);
+    }
+
+    const tieneLineasActivas =
+      await this.validacionesService.tieneLineasActivasParaSuperLinea(id);
+
+    if (tieneLineasActivas) {
+      throw new ConflictException(
+        'No se puede eliminar la súper línea porque tiene líneas asociadas.',
+      );
     }
 
     await this.repository.remove(entity, usuario);

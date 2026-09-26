@@ -143,16 +143,22 @@ const ProductoService = {
   sugerirDenominacion: async (
     marcaId: number,
     lineaId: number,
-    unidadPresentacion: UnidadPresentacion,
-    cantidadPresentacion: number,
+    unidadPresentacion?: UnidadPresentacion,
+    cantidadPresentacion?: number,
+    presentacionId?: number,
   ): Promise<{ denominacion: string } | null> => {
     try {
       const token = localStorage.getItem("Token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      const params: any = { marcaId, lineaId };
+      if (presentacionId) params.presentacionId = presentacionId;
+      if (unidadPresentacion) params.unidadPresentacion = unidadPresentacion;
+      if (cantidadPresentacion !== undefined) params.cantidadPresentacion = cantidadPresentacion;
+
       const { data } = await axios.get(`${apiUrl}/producto/sugerir-denominacion`, {
         headers,
-        params: { marcaId, lineaId, unidadPresentacion, cantidadPresentacion },
+        params,
       });
 
       return data;

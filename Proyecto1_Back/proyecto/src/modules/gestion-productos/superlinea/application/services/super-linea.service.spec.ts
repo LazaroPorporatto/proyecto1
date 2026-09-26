@@ -4,11 +4,13 @@ import { UsuarioService } from 'src/modules/gestion-usuario/usuario/application/
 import { CreateSuperLineaDto } from '../../dto/create-super-linea.dto';
 import { UpdateSuperLineaDto } from '../../dto/update-super-linea.dto';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { PoliticaEliminacionSuperLinea } from '../../domain/services/politica-eliminacion-super-linea.service';
 
 describe('SuperLineaService (Unitaria)', () => {
   let service: SuperLineaService;
   let repository: any;
   let usuarioService: any;
+  let validacionesService: any;
 
   const mockRepository = {
     create: jest.fn(),
@@ -26,6 +28,10 @@ describe('SuperLineaService (Unitaria)', () => {
     findOne: jest.fn(),
   };
 
+  const mockValidacionesService = {
+    tieneLineasActivasParaSuperLinea: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,12 +44,17 @@ describe('SuperLineaService (Unitaria)', () => {
           provide: UsuarioService,
           useValue: mockUsuarioService,
         },
+        {
+          provide: PoliticaEliminacionSuperLinea,
+          useValue: mockValidacionesService,
+        },
       ],
     }).compile();
 
     service = module.get<SuperLineaService>(SuperLineaService);
     repository = module.get('ISuperLineaRepository');
     usuarioService = module.get<UsuarioService>(UsuarioService);
+    validacionesService = module.get<PoliticaEliminacionSuperLinea>(PoliticaEliminacionSuperLinea);
 
     jest.clearAllMocks();
   });
@@ -128,6 +139,28 @@ describe('SuperLineaService (Unitaria)', () => {
     it('debería lanzar NotFoundException si no se encuentra la auditoría', async () => {
       mockRepository.findByIdConAuditoria.mockResolvedValue(null);
       await expect(service.findByIdConAuditoria(99)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('debería lanzar ConflictException si la súper línea tiene líneas asociadas', async () => {
+      const existingEntity = { id: 1, denominacion: 'Bebidas', sistema: 0 };
+      mockRepository.findOne.mockResolvedValue(existingEntity);
+      mockUsuarioService.findOne.mockResolvedValue({ id: 1, denominacion: 'Admin' });
+      mockValidacionesService.tieneLineasActivasParaSuperLinea.mockResolvedValue(true);
+
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
+    });
+
+    it('debería eliminar la súper línea si no tiene líneas asociadas', async () => {
+      const existingEntity = { id: 1, denominacion: 'Bebidas', sistema: 0 };
+      mockRepository.findOne.mockResolvedValue(existingEntity);
+      mockUsuarioService.findOne.mockResolvedValue({ id: 1, denominacion: 'Admin' });
+      mockValidacionesService.tieneLineasActivasParaSuperLinea.mockResolvedValue(false);
+      mockRepository.remove.mockResolvedValue(existingEntity);
+
+      const result = await service.remove(1, 1);
+      expect(result.mensaje).toContain('eliminada');
     });
   });
 });

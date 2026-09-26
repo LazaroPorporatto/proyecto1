@@ -106,6 +106,7 @@ export default function RegistrarActualizarProductoForm({
   const cantidadPresentacion = watch("cantidadPresentacion");
   const marcaIdActual = watch("marcaId");
   const lineaIdActual = watch("lineaId");
+  const presentacionIdActual = watch("presentacionId");
   const denominacionActual = watch("denominacion");
 
   // P1-73: Precio = Costo + Margen. Misma fórmula y redondeo que la entidad del
@@ -166,11 +167,7 @@ export default function RegistrarActualizarProductoForm({
   }, [utilizaStockMinimo]);
 
   // CR-005: sugiere la denominación automáticamente (Marca + Línea + Presentación)
-  // Solo en alta de producto nuevo (no al editar uno existente), y solo si el
-  // usuario no escribió manualmente algo distinto a la última sugerencia.
   useEffect(() => {
-    if (producto) return; // no autocompletar al editar un producto existente
-
     if (!marcaIdActual || !lineaIdActual) return;
 
     const fueEditadaManualmente =
@@ -186,6 +183,7 @@ export default function RegistrarActualizarProductoForm({
         lineaIdActual,
         unidadPresentacion || UnidadPresentacion.UNIDAD,
         cantidadPresentacion || 1,
+        presentacionIdActual || undefined,
       );
 
       if (resultado?.denominacion) {
@@ -195,7 +193,7 @@ export default function RegistrarActualizarProductoForm({
     }, 400);
 
     return () => clearTimeout(timeoutId);
-  }, [marcaIdActual, lineaIdActual, unidadPresentacion, cantidadPresentacion, producto]);
+  }, [marcaIdActual, lineaIdActual, unidadPresentacion, cantidadPresentacion, presentacionIdActual]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -211,6 +209,7 @@ export default function RegistrarActualizarProductoForm({
           setSelectedPresentacion(producto.presentacion);
 
           setValue("denominacion", producto.denominacion || "");
+          ultimaDenominacionAutoRef.current = producto.denominacion || "";
           setValue("observacion", producto.observacion || null);
           setValue("codigoProveedor", producto.codigoProveedor || "");
           setValue("codigoBarra", producto.codigoBarra || null);
@@ -561,47 +560,6 @@ export default function RegistrarActualizarProductoForm({
                       onChange={(value) => setValue(`stockMinimo`, Number(value))}
                       disabled={utilizaStockMinimo ? false : true}
                     />
-                  </div>
-
-                  {/* NUEVA SECCIÓN: Presentación del Producto (CR-002 con soporte decimal 1.5) */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 flex-1 min-w-[220px]">
-                    <div className="flex-1 w-full">
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Unidad Presentación *
-                      </label>
-                      <select
-                        {...methods.register("unidadPresentacion")}
-                        value={unidadPresentacion || UnidadPresentacion.UNIDAD}
-                        onChange={(e) => setValue("unidadPresentacion", e.target.value as UnidadPresentacion)}
-                        disabled={producto && producto.sistema > 0 ? true : false}
-                        className="w-full border border-gray-300 rounded-md p-2 text-sm text-black bg-white focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value={UnidadPresentacion.UNIDAD}>Unidad</option>
-                        <option value={UnidadPresentacion.LITRO}>Litros (L)</option>
-                        <option value={UnidadPresentacion.MILILITRO}>Mililitros (ML)</option>
-                        <option value={UnidadPresentacion.KILOGRAMO}>Kilogramos (KG)</option>
-                        <option value={UnidadPresentacion.GRAMO}>Gramos (GR)</option>
-                        <option value={UnidadPresentacion.CAJA}>Caja</option>
-                      </select>
-                    </div>
-
-                    <div className="flex-1 w-full">
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Cantidad Presentación *
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0.01"
-                        {...methods.register("cantidadPresentacion", { valueAsNumber: true })}
-                        className="w-full border border-gray-300 rounded-md p-2 text-sm text-black bg-white focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Ej: 1, 1.5, 6"
-                        disabled={producto && producto.sistema > 0 ? true : false}
-                      />
-                      {errors.cantidadPresentacion && (
-                        <small className="text-red-500">{String(errors.cantidadPresentacion.message)}</small>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
